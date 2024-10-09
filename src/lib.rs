@@ -12,9 +12,11 @@ pub struct ComputeEnvironment {
 
 // TODO: maybe this could be ComputeEnvironment::new()?
 pub fn get_compute_environment() -> Result<ComputeEnvironment> {
-    // TODO: plumb everything together.
+    let cloud_provider = get_cloud_provider()?;
+    let compute_platform = get_compute_platform(cloud_provider)?;
+
     Ok(ComputeEnvironment {
-        cloud_provider: None,
-        compute_platform: None,
+        cloud_provider,
+        compute_platform,
     })
 }

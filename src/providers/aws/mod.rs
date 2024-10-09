@@ -1,4 +1,7 @@
+use anyhow::Result;
+
 /// Represents the supported AWS compute platforms.
+#[derive(Clone, Debug)]
 pub enum ComputePlatform {
     Ecs,
     Ec2,
@@ -9,7 +12,7 @@ pub enum ComputePlatform {
 impl ComputePlatform {
     /// Gets a list of environment variables used to detect a compute platform.
     // TODO: just return a Vec<String>?
-    pub fn get_env_vars(&self) -> &'static [&'static str] {
+    pub(crate) fn get_env_vars(&self) -> &'static [&'static str] {
         match self {
             ComputePlatform::Ecs => &[
                 "AWS_EXECUTION_ENV",
@@ -30,4 +33,8 @@ impl ComputePlatform {
             ],
         }
     }
+}
+
+pub(crate) fn detect_compute_platform() -> Result<Option<ComputePlatform>> {
+    Ok(None)
 }
