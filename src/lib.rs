@@ -1,6 +1,6 @@
 use anyhow::Result;
 
-mod env;
+pub mod env;
 mod providers;
 use providers::*;
 
@@ -10,10 +10,9 @@ pub struct ComputeEnvironment {
     pub compute_platform: Option<ComputePlatform>,
 }
 
-// TODO: maybe this could be ComputeEnvironment::new()?
 pub fn get_compute_environment() -> Result<ComputeEnvironment> {
     let cloud_provider = get_cloud_provider()?;
-    let compute_platform = get_compute_platform(cloud_provider)?;
+    let compute_platform = get_compute_platform(cloud_provider);
 
     Ok(ComputeEnvironment {
         cloud_provider,

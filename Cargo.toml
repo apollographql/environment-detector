@@ -6,3 +6,6 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0.89"
 libc = "0.2.159"
+
+[dev-dependencies]
+rstest = "0.23.0"

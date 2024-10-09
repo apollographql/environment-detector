@@ -3,7 +3,7 @@
 /// Note this function specifically uses libc in order to ensure we do _NOT_ hold the env var value
 /// in memory, as this data should always be treated as secure regardless of the data.
 #[cfg(unix)]
-fn hasenv(name: &str) -> bool {
+pub fn hasenv(name: &str) -> bool {
     let k = std::ffi::CString::new(name).unwrap();
     let v = unsafe { libc::getenv(k.as_ptr()) } as *const libc::c_char;
     !v.is_null()
