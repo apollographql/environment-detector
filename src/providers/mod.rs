@@ -6,6 +6,7 @@ mod aws;
 mod azure;
 mod env;
 mod gcp;
+mod kubernetes;
 
 const DMI_SYS_VENDOR: &str = "/sys/class/dmi/id/sys_vendor";
 
@@ -35,7 +36,7 @@ pub fn get_cloud_provider() -> Result<Option<CloudProvider>> {
 }
 
 /// Represents the currently supported compute platforms.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum ComputePlatform {
     Aws(aws::ComputePlatform),
     Azure(azure::ComputePlatform),
@@ -67,6 +68,7 @@ pub fn get_compute_platform(cloud_provider: Option<CloudProvider>) -> Option<Com
         }
     // If we don't have a cloud provider, look for a standalone platform.
     } else {
-        todo!("implement non-cloud provider platform detection")
+        // TODO: need to make this generic so we can also pass it to the cloud providers.
+        kubernetes::detect_compute_platform(env_vars)
     }
 }
