@@ -26,7 +26,7 @@ fn get_env_vars(platform: ComputePlatform) -> &'static [&'static str] {
     }
 }
 
-pub(crate) fn detect_compute_platform(vars: HashSet<&str>) -> Option<ComputePlatform> {
+pub(crate) fn detect_compute_platform(vars: &HashSet<&str>) -> Option<ComputePlatform> {
     if vars.is_empty() {
         return None;
     }
@@ -75,7 +75,7 @@ mod tests {
             vars.insert(var);
             vars
         });
-        let actual_platform = detect_compute_platform(env_vars);
+        let actual_platform = detect_compute_platform(&env_vars);
         assert_eq!(expected_platform, actual_platform);
     }
 }

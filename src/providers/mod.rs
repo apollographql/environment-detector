@@ -7,6 +7,7 @@ mod azure;
 mod env;
 mod gcp;
 mod kubernetes;
+mod nomad;
 
 const DMI_SYS_VENDOR: &str = "/sys/class/dmi/id/sys_vendor";
 
@@ -60,15 +61,26 @@ pub fn get_compute_platform(cloud_provider: Option<CloudProvider>) -> Option<Com
     // If we have a cloud provider, use specific identifiers for detecing the compute platform.
     if let Some(provider) = cloud_provider {
         match provider {
-            CloudProvider::Aws => aws::detect_compute_platform(env_vars).map(ComputePlatform::Aws),
-            CloudProvider::Azure => {
-                azure::detect_compute_platform(env_vars).map(ComputePlatform::Azure)
+            CloudProvider::Aws => {
+                return aws::detect_compute_platform(&env_vars).map(ComputePlatform::Aws)
             }
-            CloudProvider::Gcp => gcp::detect_compute_platform(env_vars).map(ComputePlatform::Gcp),
+            CloudProvider::Azure => {
+                return azure::detect_compute_platform(&env_vars).map(ComputePlatform::Azure)
+            }
+            CloudProvider::Gcp => {
+                return gcp::detect_compute_platform(&env_vars).map(ComputePlatform::Gcp)
+            }
         }
-    // If we don't have a cloud provider, look for a standalone platform.
-    } else {
-        // TODO: need to make this generic so we can also pass it to the cloud providers.
-        kubernetes::detect_compute_platform(env_vars)
     }
+
+    // If we weren't able to match a cloud specific platform, check for general platforms too.
+    if let Some(k) = kubernetes::detect_compute_platform(&env_vars) {
+        return Some(k);
+    }
+    if let Some(n) = nomad::detect_compute_platform(&env_vars) {
+        return Some(n);
+    }
+
+    // We weren't able to match a platform.
+    None
 }

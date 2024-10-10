@@ -5,14 +5,24 @@ use crate::ComputePlatform;
 /// Gets a list of environment variables used to detect a compute platform.
 fn get_env_vars() -> &'static [&'static str] {
     &[
-        "KUBERNETES_PORT",
-        "KUBERNETES_PORT_443_TCP",
-        "KUBERNETES_PORT_443_TCP_ADDR",
-        "KUBERNETES_PORT_443_TCP_PORT",
-        "KUBERNETES_PORT_443_TCP_PROTO",
-        "KUBERNETES_SERVICE_HOST",
-        "KUBERNETES_SERVICE_PORT",
-        "KUBERNETES_SERVICE_PORT_HTTPS",
+        "NOMAD_ALLOC_DIR",
+        "NOMAD_ALLOC_ID",
+        "NOMAD_ALLOC_INDEX",
+        "NOMAD_ALLOC_NAME",
+        "NOMAD_CPU_CORES",
+        "NOMAD_CPU_LIMIT",
+        "NOMAD_DC",
+        "NOMAD_GROUP_NAME",
+        "NOMAD_JOB_ID",
+        "NOMAD_JOB_NAME",
+        "NOMAD_MEMORY_LIMIT",
+        "NOMAD_NAMESPACE",
+        "NOMAD_PARENT_CGROUP",
+        "NOMAD_REGION",
+        "NOMAD_SECRETS_DIR",
+        "NOMAD_SHORT_ALLOC_ID",
+        "NOMAD_TASK_DIR",
+        "NOMAD_TASK_NAME",
     ]
 }
 
@@ -22,7 +32,7 @@ pub(crate) fn detect_compute_platform(vars: &HashSet<&str>) -> Option<ComputePla
     }
 
     if vars.iter().all(|item| get_env_vars().contains(item)) {
-        return Some(ComputePlatform::Kubernetes);
+        return Some(ComputePlatform::Nomad);
     }
 
     None
@@ -37,7 +47,7 @@ mod tests {
     use super::*;
 
     #[rstest]
-    #[case::kubernetes(get_env_vars(), Some(ComputePlatform::Kubernetes))]
+    #[case::nomad(get_env_vars(), Some(ComputePlatform::Nomad))]
     #[case::empty(&[], None)]
     #[case::no_match(&["ENV_A", "ENV_B"], None)]
     fn test_detect_compute_platform(
