@@ -9,7 +9,7 @@ pub struct Ecs;
 
 impl Detector for Ecs {
     fn detect(&self, smbios: &Smbios, env_vars: &HashSet<&str>) -> Option<ComputePlatform> {
-        if !smbios.is_vendor(AWS_VENDOR) {
+        if !smbios.is_system_vendor(AWS_VENDOR) {
             return None;
         }
 
@@ -39,7 +39,7 @@ pub struct Ec2;
 impl Detector for Ec2 {
     // TODO: better smbios matching.
     fn detect(&self, smbios: &Smbios, env_vars: &HashSet<&str>) -> Option<ComputePlatform> {
-        if !smbios.is_vendor(AWS_VENDOR) {
+        if !smbios.is_system_vendor(AWS_VENDOR) {
             return None;
         }
 
@@ -64,7 +64,7 @@ pub struct Fargate;
 impl Detector for Fargate {
     // TODO: better smbios matching.
     fn detect(&self, smbios: &Smbios, env_vars: &HashSet<&str>) -> Option<ComputePlatform> {
-        if !smbios.is_vendor(AWS_VENDOR) {
+        if !smbios.is_system_vendor(AWS_VENDOR) {
             return None;
         }
 
@@ -88,7 +88,7 @@ pub struct Lambda;
 
 impl Detector for Lambda {
     fn detect(&self, smbios: &Smbios, env_vars: &HashSet<&str>) -> Option<ComputePlatform> {
-        if !smbios.is_vendor(AWS_VENDOR) {
+        if !smbios.is_system_vendor(AWS_VENDOR) {
             return None;
         }
 
@@ -124,9 +124,9 @@ mod tests {
     use super::*;
 
     #[rstest]
-    #[case::no_match(&[], Smbios {dmi_sys_vendor: None}, None)]
-    #[case::smbios_env_match(Ecs.env_vars(), Smbios {dmi_sys_vendor: Some(AWS_VENDOR.to_string())}, Some(ComputePlatform::AwsEcs))]
-    #[case::smbios_no_match(&[], Smbios {dmi_sys_vendor: Some(AWS_VENDOR.to_string())}, None)]
+    #[case::no_match(&[], Smbios::from(("", "", "")), None)]
+    #[case::smbios_env_match(Ecs.env_vars(), Smbios::from(("", "", AWS_VENDOR)), Some(ComputePlatform::AwsEcs))]
+    #[case::smbios_no_match(&[], Smbios::from(("", "", AWS_VENDOR)), None)]
     fn test_ecs(
         #[case] input_vars: &[&str],
         #[case] smbios: Smbios,
@@ -141,9 +141,9 @@ mod tests {
     }
 
     #[rstest]
-    #[case::no_match(&[], Smbios {dmi_sys_vendor: None}, None)]
-    #[case::smbios_env_match(Lambda.env_vars(), Smbios {dmi_sys_vendor: Some(AWS_VENDOR.to_string())}, Some(ComputePlatform::AwsLambda))]
-    #[case::smbios_no_match(&[], Smbios {dmi_sys_vendor: Some(AWS_VENDOR.to_string())}, None)]
+    #[case::no_match(&[], Smbios::from(("", "", "")), None)]
+    #[case::smbios_env_match(Lambda.env_vars(), Smbios::from(("", "", AWS_VENDOR)), Some(ComputePlatform::AwsLambda))]
+    #[case::smbios_no_match(&[], Smbios::from(("", "", AWS_VENDOR)), None)]
     fn test_lambda(
         #[case] input_vars: &[&str],
         #[case] smbios: Smbios,

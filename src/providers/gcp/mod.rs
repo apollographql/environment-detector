@@ -9,7 +9,7 @@ pub struct CloudRunGen1;
 
 impl Detector for CloudRunGen1 {
     fn detect(&self, smbios: &Smbios, env_vars: &HashSet<&str>) -> Option<ComputePlatform> {
-        if !smbios.is_vendor(GCP_VENDOR) {
+        if !smbios.is_system_vendor(GCP_VENDOR) {
             return None;
         }
 
@@ -39,7 +39,7 @@ pub struct CloudRunGen2;
 
 impl Detector for CloudRunGen2 {
     fn detect(&self, smbios: &Smbios, env_vars: &HashSet<&str>) -> Option<ComputePlatform> {
-        if !smbios.is_vendor(GCP_VENDOR) {
+        if !smbios.is_system_vendor(GCP_VENDOR) {
             return None;
         }
 
@@ -69,7 +69,7 @@ pub struct CloudRunJob;
 
 impl Detector for CloudRunJob {
     fn detect(&self, smbios: &Smbios, env_vars: &HashSet<&str>) -> Option<ComputePlatform> {
-        if !smbios.is_vendor(GCP_VENDOR) {
+        if !smbios.is_system_vendor(GCP_VENDOR) {
             return None;
         }
 
@@ -103,9 +103,9 @@ mod tests {
     use super::*;
 
     #[rstest]
-    #[case::no_match(&[], Smbios {dmi_sys_vendor: None}, None)]
-    #[case::smbios_env_match(CloudRunGen1.env_vars(), Smbios {dmi_sys_vendor: Some(GCP_VENDOR.to_string())}, Some(ComputePlatform::GcpCloudRunGen1))]
-    #[case::smbios_no_match(&[], Smbios {dmi_sys_vendor: Some(GCP_VENDOR.to_string())}, None)]
+    #[case::no_match(&[], Smbios::from(("", "", "")), None)]
+    #[case::smbios_env_match(CloudRunGen1.env_vars(), Smbios::from(("", "", GCP_VENDOR)), Some(ComputePlatform::GcpCloudRunGen1))]
+    #[case::smbios_no_match(&[], Smbios::from(("", "", GCP_VENDOR)), None)]
     fn test_cloud_run_gen1(
         #[case] input_vars: &[&str],
         #[case] smbios: Smbios,
@@ -120,9 +120,9 @@ mod tests {
     }
 
     #[rstest]
-    #[case::no_match(&[], Smbios {dmi_sys_vendor: None}, None)]
-    #[case::smbios_env_match(CloudRunGen2.env_vars(), Smbios {dmi_sys_vendor: Some(GCP_VENDOR.to_string())}, Some(ComputePlatform::GcpCloudRunGen2))]
-    #[case::smbios_no_match(&[], Smbios {dmi_sys_vendor: Some(GCP_VENDOR.to_string())}, None)]
+    #[case::no_match(&[], Smbios::from(("", "", "")), None)]
+    #[case::smbios_env_match(CloudRunGen2.env_vars(), Smbios::from(("", "", GCP_VENDOR)), Some(ComputePlatform::GcpCloudRunGen2))]
+    #[case::smbios_no_match(&[], Smbios::from(("", "", GCP_VENDOR)), None)]
     fn test_cloud_run_gen2(
         #[case] input_vars: &[&str],
         #[case] smbios: Smbios,
@@ -137,9 +137,9 @@ mod tests {
     }
 
     #[rstest]
-    #[case::no_match(&[], Smbios {dmi_sys_vendor: None}, None)]
-    #[case::smbios_env_match(CloudRunJob.env_vars(), Smbios {dmi_sys_vendor: Some(GCP_VENDOR.to_string())}, Some(ComputePlatform::GcpCloudRunJob))]
-    #[case::smbios_no_match(&[], Smbios {dmi_sys_vendor: Some(GCP_VENDOR.to_string())}, None)]
+    #[case::no_match(&[], Smbios::from(("", "", "")), None)]
+    #[case::smbios_env_match(CloudRunJob.env_vars(), Smbios::from(("", "", GCP_VENDOR)), Some(ComputePlatform::GcpCloudRunJob))]
+    #[case::smbios_no_match(&[], Smbios::from(("", "", GCP_VENDOR)), None)]
     fn test_cloud_run_job(
         #[case] input_vars: &[&str],
         #[case] smbios: Smbios,

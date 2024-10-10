@@ -23,17 +23,13 @@ mod tests {
     use super::*;
 
     #[rstest]
-    #[case::no_match(&[], Smbios {dmi_sys_vendor: None}, None)]
-    fn test_qemu(
-        #[case] input_vars: &[&str],
-        #[case] smbios: Smbios,
-        #[case] expected_platform: Option<ComputePlatform>,
-    ) {
+    #[case::no_match(&[], None)]
+    fn test_qemu(#[case] input_vars: &[&str], #[case] expected_platform: Option<ComputePlatform>) {
         let env_vars: HashSet<&str> = input_vars.iter().fold(HashSet::new(), |mut vars, var| {
             vars.insert(var);
             vars
         });
-        let actual_platform = Qemu.detect(&smbios, &env_vars);
+        let actual_platform = Qemu.detect(&Smbios::from(("", "", "")), &env_vars);
         assert_eq!(expected_platform, actual_platform);
     }
 }
