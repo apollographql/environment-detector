@@ -51,7 +51,7 @@ impl Smbios {
     }
 
     /// Returns `true` if the given product name matches that stored in the dmi data.
-    pub fn is_producy_name(&self, name: &str) -> bool {
+    pub fn is_product_name(&self, name: &str) -> bool {
         if let Some(v) = self.dmi_product_name.clone() {
             return v.contains(name);
         }

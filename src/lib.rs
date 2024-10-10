@@ -39,7 +39,7 @@ pub fn get_compute_environment() -> Result<ComputeEnvironment, ComputeError> {
     Ok(ComputeEnvironment { compute_platform })
 }
 
-pub trait Detector {
+pub(crate) trait Detector {
     /// Blah
     fn detect(&self, smbios: &Smbios, env_vars: &HashSet<&str>) -> Option<ComputePlatform>;
 
