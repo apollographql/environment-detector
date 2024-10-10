@@ -4,7 +4,7 @@ mod env;
 pub mod error;
 use error::ComputeError;
 mod providers;
-use providers::*;
+use providers::{aws, azure, gcp, kubernetes, nomad, qemu, ComputePlatform};
 mod smbios;
 use smbios::Smbios;
 
@@ -39,11 +39,12 @@ pub fn get_compute_environment() -> Result<ComputeEnvironment, ComputeError> {
     Ok(ComputeEnvironment { compute_platform })
 }
 
+/// Trait for detecting the use of a cumpute platform.
 pub(crate) trait Detector {
-    /// Blah
+    /// Returns a [`ComputePlatform`] based on the given smbios data and environment variables.
     fn detect(&self, smbios: &Smbios, env_vars: &HashSet<&str>) -> Option<ComputePlatform>;
 
-    /// Blah
+    /// Returns a list of environment variables used to detect a compute platform.
     fn env_vars(&self) -> &'static [&'static str];
 }
 

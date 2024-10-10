@@ -32,6 +32,7 @@ pub enum ComputePlatform {
 }
 
 impl PartialOrd for ComputePlatform {
+    // TODO: implement this - I can't remember why we needed it?
     fn partial_cmp(&self, _other: &Self) -> Option<Ordering> {
         None
     }
