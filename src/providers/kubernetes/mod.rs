@@ -1,31 +1,34 @@
 use std::collections::HashSet;
 
-use crate::ComputePlatform;
+use crate::{ComputePlatform, Detector, Smbios};
 
-/// Gets a list of environment variables used to detect a compute platform.
-fn get_env_vars() -> &'static [&'static str] {
-    &[
-        "KUBERNETES_PORT",
-        "KUBERNETES_PORT_443_TCP",
-        "KUBERNETES_PORT_443_TCP_ADDR",
-        "KUBERNETES_PORT_443_TCP_PORT",
-        "KUBERNETES_PORT_443_TCP_PROTO",
-        "KUBERNETES_SERVICE_HOST",
-        "KUBERNETES_SERVICE_PORT",
-        "KUBERNETES_SERVICE_PORT_HTTPS",
-    ]
-}
+/// Represents the Kubernetes platform.
+pub struct Kubernetes;
 
-pub(crate) fn detect_compute_platform(vars: &HashSet<&str>) -> Option<ComputePlatform> {
-    if vars.is_empty() {
-        return None;
+impl Detector for Kubernetes {
+    fn detect(&self, _smbios: &Smbios, env_vars: &HashSet<&str>) -> Option<ComputePlatform> {
+        if env_vars.is_empty() {
+            return None;
+        }
+
+        env_vars
+            .iter()
+            .all(|var| self.env_vars().contains(var))
+            .then_some(ComputePlatform::Kubernetes)
     }
 
-    if vars.iter().all(|item| get_env_vars().contains(item)) {
-        return Some(ComputePlatform::Kubernetes);
+    fn env_vars(&self) -> &'static [&'static str] {
+        &[
+            "KUBERNETES_PORT",
+            "KUBERNETES_PORT_443_TCP",
+            "KUBERNETES_PORT_443_TCP_ADDR",
+            "KUBERNETES_PORT_443_TCP_PORT",
+            "KUBERNETES_PORT_443_TCP_PROTO",
+            "KUBERNETES_SERVICE_HOST",
+            "KUBERNETES_SERVICE_PORT",
+            "KUBERNETES_SERVICE_PORT_HTTPS",
+        ]
     }
-
-    None
 }
 
 #[cfg(test)]
@@ -37,18 +40,19 @@ mod tests {
     use super::*;
 
     #[rstest]
-    #[case::kubernetes(get_env_vars(), Some(ComputePlatform::Kubernetes))]
-    #[case::empty(&[], None)]
-    #[case::no_match(&["ENV_A", "ENV_B"], None)]
-    fn test_detect_compute_platform(
+    #[case::no_match(&[], Smbios {dmi_sys_vendor: None}, None)]
+    #[case::smbios_env_match(Kubernetes.env_vars(), Smbios {dmi_sys_vendor: None}, Some(ComputePlatform::Kubernetes))]
+    #[case::smbios_no_match(&[], Smbios {dmi_sys_vendor: None}, None)]
+    fn test_kubernetes(
         #[case] input_vars: &[&str],
+        #[case] smbios: Smbios,
         #[case] expected_platform: Option<ComputePlatform>,
     ) {
         let env_vars: HashSet<&str> = input_vars.iter().fold(HashSet::new(), |mut vars, var| {
             vars.insert(var);
             vars
         });
-        let actual_platform = detect_compute_platform(&env_vars);
+        let actual_platform = Kubernetes.detect(&smbios, &env_vars);
         assert_eq!(expected_platform, actual_platform);
     }
 }

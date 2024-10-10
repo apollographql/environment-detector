@@ -1,41 +1,44 @@
 use std::collections::HashSet;
 
-use crate::ComputePlatform;
+use crate::{ComputePlatform, Detector, Smbios};
 
-/// Gets a list of environment variables used to detect a compute platform.
-fn get_env_vars() -> &'static [&'static str] {
-    &[
-        "NOMAD_ALLOC_DIR",
-        "NOMAD_ALLOC_ID",
-        "NOMAD_ALLOC_INDEX",
-        "NOMAD_ALLOC_NAME",
-        "NOMAD_CPU_CORES",
-        "NOMAD_CPU_LIMIT",
-        "NOMAD_DC",
-        "NOMAD_GROUP_NAME",
-        "NOMAD_JOB_ID",
-        "NOMAD_JOB_NAME",
-        "NOMAD_MEMORY_LIMIT",
-        "NOMAD_NAMESPACE",
-        "NOMAD_PARENT_CGROUP",
-        "NOMAD_REGION",
-        "NOMAD_SECRETS_DIR",
-        "NOMAD_SHORT_ALLOC_ID",
-        "NOMAD_TASK_DIR",
-        "NOMAD_TASK_NAME",
-    ]
-}
+/// Represents the HashiCorp Nomad platform.
+pub struct Nomad;
 
-pub(crate) fn detect_compute_platform(vars: &HashSet<&str>) -> Option<ComputePlatform> {
-    if vars.is_empty() {
-        return None;
+impl Detector for Nomad {
+    fn detect(&self, _smbios: &Smbios, env_vars: &HashSet<&str>) -> Option<ComputePlatform> {
+        if env_vars.is_empty() {
+            return None;
+        }
+
+        env_vars
+            .iter()
+            .all(|var| self.env_vars().contains(var))
+            .then_some(ComputePlatform::Nomad)
     }
 
-    if vars.iter().all(|item| get_env_vars().contains(item)) {
-        return Some(ComputePlatform::Nomad);
+    fn env_vars(&self) -> &'static [&'static str] {
+        &[
+            "NOMAD_ALLOC_DIR",
+            "NOMAD_ALLOC_ID",
+            "NOMAD_ALLOC_INDEX",
+            "NOMAD_ALLOC_NAME",
+            "NOMAD_CPU_CORES",
+            "NOMAD_CPU_LIMIT",
+            "NOMAD_DC",
+            "NOMAD_GROUP_NAME",
+            "NOMAD_JOB_ID",
+            "NOMAD_JOB_NAME",
+            "NOMAD_MEMORY_LIMIT",
+            "NOMAD_NAMESPACE",
+            "NOMAD_PARENT_CGROUP",
+            "NOMAD_REGION",
+            "NOMAD_SECRETS_DIR",
+            "NOMAD_SHORT_ALLOC_ID",
+            "NOMAD_TASK_DIR",
+            "NOMAD_TASK_NAME",
+        ]
     }
-
-    None
 }
 
 #[cfg(test)]
@@ -47,18 +50,19 @@ mod tests {
     use super::*;
 
     #[rstest]
-    #[case::nomad(get_env_vars(), Some(ComputePlatform::Nomad))]
-    #[case::empty(&[], None)]
-    #[case::no_match(&["ENV_A", "ENV_B"], None)]
-    fn test_detect_compute_platform(
+    #[case::no_match(&[], Smbios {dmi_sys_vendor: None}, None)]
+    #[case::smbios_env_match(Nomad.env_vars(), Smbios {dmi_sys_vendor: None}, Some(ComputePlatform::Nomad))]
+    #[case::smbios_no_match(&[], Smbios {dmi_sys_vendor: None}, None)]
+    fn test_nomad(
         #[case] input_vars: &[&str],
+        #[case] smbios: Smbios,
         #[case] expected_platform: Option<ComputePlatform>,
     ) {
         let env_vars: HashSet<&str> = input_vars.iter().fold(HashSet::new(), |mut vars, var| {
             vars.insert(var);
             vars
         });
-        let actual_platform = detect_compute_platform(&env_vars);
+        let actual_platform = Nomad.detect(&smbios, &env_vars);
         assert_eq!(expected_platform, actual_platform);
     }
 }

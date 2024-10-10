@@ -1,67 +1,97 @@
 use std::collections::HashSet;
 
-/// Represents the differnent Cloud Run platforms.
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub enum CloudRunPlatform {
-    Gen1,
-    Gen2,
-    Job,
-}
+use crate::{ComputePlatform, Detector, Smbios};
 
-/// Represents the supported GCP compute platforms.
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub enum ComputePlatform {
-    CloudRun(CloudRunPlatform),
-}
+const GCP_VENDOR: &str = "google";
 
-/// Gets a list of environment variables used to detect a compute platform.
-fn get_env_vars(platform: ComputePlatform) -> &'static [&'static str] {
-    match platform {
-        ComputePlatform::CloudRun(CloudRunPlatform::Gen1) => &[
+/// Represents the GCP Cloud Run Gen1 platform.
+pub struct CloudRunGen1;
+
+impl Detector for CloudRunGen1 {
+    fn detect(&self, smbios: &Smbios, env_vars: &HashSet<&str>) -> Option<ComputePlatform> {
+        if !smbios.is_vendor(GCP_VENDOR) {
+            return None;
+        }
+
+        if env_vars.is_empty() {
+            return None;
+        }
+
+        env_vars
+            .iter()
+            .all(|var| self.env_vars().contains(var))
+            .then_some(ComputePlatform::GcpCloudRunGen1)
+    }
+
+    fn env_vars(&self) -> &'static [&'static str] {
+        &[
             "K_REVISION",
             "K_SERVICE",
             "PORT",
             "K_CONFIGURATION",
             "CLOUD_RUN_TIMEOUT_SECONDS",
-        ],
-        ComputePlatform::CloudRun(CloudRunPlatform::Gen2) => &[
+        ]
+    }
+}
+
+/// Represents the GCP Cloud Run Gen2 platform.
+pub struct CloudRunGen2;
+
+impl Detector for CloudRunGen2 {
+    fn detect(&self, smbios: &Smbios, env_vars: &HashSet<&str>) -> Option<ComputePlatform> {
+        if !smbios.is_vendor(GCP_VENDOR) {
+            return None;
+        }
+
+        if env_vars.is_empty() {
+            return None;
+        }
+
+        env_vars
+            .iter()
+            .all(|var| self.env_vars().contains(var))
+            .then_some(ComputePlatform::GcpCloudRunGen2)
+    }
+
+    fn env_vars(&self) -> &'static [&'static str] {
+        &[
             "K_REVISION",
             "K_SERVICE",
             "PORT",
             "K_CONFIGURATION",
             "CLOUD_RUN_TIMEOUT_SECONDS",
-        ],
-        ComputePlatform::CloudRun(CloudRunPlatform::Job) => &[
+        ]
+    }
+}
+
+/// Represents the GCP Cloud Run Job platform.
+pub struct CloudRunJob;
+
+impl Detector for CloudRunJob {
+    fn detect(&self, smbios: &Smbios, env_vars: &HashSet<&str>) -> Option<ComputePlatform> {
+        if !smbios.is_vendor(GCP_VENDOR) {
+            return None;
+        }
+
+        if env_vars.is_empty() {
+            return None;
+        }
+
+        env_vars
+            .iter()
+            .all(|var| self.env_vars().contains(var))
+            .then_some(ComputePlatform::GcpCloudRunJob)
+    }
+
+    fn env_vars(&self) -> &'static [&'static str] {
+        &[
             "CLOUD_RUN_EXECUTION",
             "CLOUD_RUN_JOB",
             "CLOUD_RUN_TASK_ATTEMPT",
             "CLOUD_RUN_TASK_COUNT",
             "CLOUD_RUN_TASK_INDEX",
-        ],
+        ]
     }
-}
-
-// TODO: difference between cloud run gen1 and gen2?
-pub(crate) fn detect_compute_platform(vars: &HashSet<&str>) -> Option<ComputePlatform> {
-    if vars.is_empty() {
-        return None;
-    }
-
-    if vars
-        .iter()
-        .all(|item| get_env_vars(ComputePlatform::CloudRun(CloudRunPlatform::Gen1)).contains(item))
-    {
-        return Some(ComputePlatform::CloudRun(CloudRunPlatform::Gen1));
-    }
-
-    if vars
-        .iter()
-        .all(|item| get_env_vars(ComputePlatform::CloudRun(CloudRunPlatform::Job)).contains(item))
-    {
-        return Some(ComputePlatform::CloudRun(CloudRunPlatform::Job));
-    }
-
-    None
 }
 
 #[cfg(test)]
@@ -73,25 +103,53 @@ mod tests {
     use super::*;
 
     #[rstest]
-    #[case::cloud_run_gen1(
-        get_env_vars(ComputePlatform::CloudRun(CloudRunPlatform::Gen1)),
-        Some(ComputePlatform::CloudRun(CloudRunPlatform::Gen1))
-    )]
-    #[case::cloud_run_job(
-        get_env_vars(ComputePlatform::CloudRun(CloudRunPlatform::Job)),
-        Some(ComputePlatform::CloudRun(CloudRunPlatform::Job))
-    )]
-    #[case::empty(&[], None)]
-    #[case::no_match(&["ENV_A", "ENV_B"], None)]
-    fn test_detect_compute_platform(
+    #[case::no_match(&[], Smbios {dmi_sys_vendor: None}, None)]
+    #[case::smbios_env_match(CloudRunGen1.env_vars(), Smbios {dmi_sys_vendor: Some(GCP_VENDOR.to_string())}, Some(ComputePlatform::GcpCloudRunGen1))]
+    #[case::smbios_no_match(&[], Smbios {dmi_sys_vendor: Some(GCP_VENDOR.to_string())}, None)]
+    fn test_cloud_run_gen1(
         #[case] input_vars: &[&str],
+        #[case] smbios: Smbios,
         #[case] expected_platform: Option<ComputePlatform>,
     ) {
         let env_vars: HashSet<&str> = input_vars.iter().fold(HashSet::new(), |mut vars, var| {
             vars.insert(var);
             vars
         });
-        let actual_platform = detect_compute_platform(&env_vars);
+        let actual_platform = CloudRunGen1.detect(&smbios, &env_vars);
+        assert_eq!(expected_platform, actual_platform);
+    }
+
+    #[rstest]
+    #[case::no_match(&[], Smbios {dmi_sys_vendor: None}, None)]
+    #[case::smbios_env_match(CloudRunGen2.env_vars(), Smbios {dmi_sys_vendor: Some(GCP_VENDOR.to_string())}, Some(ComputePlatform::GcpCloudRunGen2))]
+    #[case::smbios_no_match(&[], Smbios {dmi_sys_vendor: Some(GCP_VENDOR.to_string())}, None)]
+    fn test_cloud_run_gen2(
+        #[case] input_vars: &[&str],
+        #[case] smbios: Smbios,
+        #[case] expected_platform: Option<ComputePlatform>,
+    ) {
+        let env_vars: HashSet<&str> = input_vars.iter().fold(HashSet::new(), |mut vars, var| {
+            vars.insert(var);
+            vars
+        });
+        let actual_platform = CloudRunGen2.detect(&smbios, &env_vars);
+        assert_eq!(expected_platform, actual_platform);
+    }
+
+    #[rstest]
+    #[case::no_match(&[], Smbios {dmi_sys_vendor: None}, None)]
+    #[case::smbios_env_match(CloudRunJob.env_vars(), Smbios {dmi_sys_vendor: Some(GCP_VENDOR.to_string())}, Some(ComputePlatform::GcpCloudRunJob))]
+    #[case::smbios_no_match(&[], Smbios {dmi_sys_vendor: Some(GCP_VENDOR.to_string())}, None)]
+    fn test_cloud_run_job(
+        #[case] input_vars: &[&str],
+        #[case] smbios: Smbios,
+        #[case] expected_platform: Option<ComputePlatform>,
+    ) {
+        let env_vars: HashSet<&str> = input_vars.iter().fold(HashSet::new(), |mut vars, var| {
+            vars.insert(var);
+            vars
+        });
+        let actual_platform = CloudRunJob.detect(&smbios, &env_vars);
         assert_eq!(expected_platform, actual_platform);
     }
 }
