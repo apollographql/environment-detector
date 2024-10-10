@@ -1,8 +1,8 @@
 use std::{collections::HashSet, ops::Deref};
 
-use anyhow::Result;
-
 mod env;
+pub mod error;
+use error::ComputeError;
 mod providers;
 use providers::*;
 mod smbios;
@@ -13,7 +13,7 @@ pub struct ComputeEnvironment {
     pub compute_platform: Option<ComputePlatform>,
 }
 
-pub fn get_compute_environment() -> Result<ComputeEnvironment> {
+pub fn get_compute_environment() -> Result<ComputeEnvironment, ComputeError> {
     // Attempt to read SMBIOS data.
     let smbios = Smbios::new();
 

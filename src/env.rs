@@ -4,6 +4,7 @@
 /// in memory, as this data should always be treated as secure regardless of the data.
 #[cfg(unix)]
 pub fn hasenv(name: &str) -> bool {
+    // TODO: Does this need a Windows specific implementation?
     let k = std::ffi::CString::new(name).unwrap();
     let v = unsafe { libc::getenv(k.as_ptr()) } as *const libc::c_char;
     !v.is_null()
