@@ -1,19 +1,12 @@
 use std::{collections::HashSet, ops::Deref};
 
 mod env;
-pub mod error;
-use error::ComputeError;
 mod providers;
 use providers::{aws, azure, gcp, kubernetes, nomad, qemu, ComputePlatform};
 mod smbios;
 use smbios::Smbios;
 
-/// Represents the known platform details of a specific compute environment.
-pub struct ComputeEnvironment {
-    pub compute_platform: Option<ComputePlatform>,
-}
-
-pub fn get_compute_environment() -> Result<ComputeEnvironment, ComputeError> {
+pub fn get_compute_platform() -> Option<ComputePlatform> {
     // Attempt to read SMBIOS data.
     let smbios = Smbios::new();
 
@@ -36,10 +29,10 @@ pub fn get_compute_environment() -> Result<ComputeEnvironment, ComputeError> {
             None => Some(new),
         });
 
-    Ok(ComputeEnvironment { compute_platform })
+    compute_platform
 }
 
-/// Trait for detecting the use of a cumpute platform.
+/// Trait for detecting the use of a compute platform.
 pub(crate) trait Detector {
     /// Returns a [`ComputePlatform`] based on the given smbios data and environment variables.
     fn detect(&self, smbios: &Smbios, env_vars: &HashSet<&str>) -> Option<ComputePlatform>;
