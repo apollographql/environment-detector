@@ -2,17 +2,14 @@ use std::collections::HashSet;
 
 use crate::{ComputePlatform, Detector, Smbios};
 
-const AWS_SYSTEM_VENDOR: &str = "amazon";
+const AWS_SYSTEM_VENDOR: &str = "amazon ec2";
 
 /// Represents the AWS ECS platform.
 pub struct Ecs;
 
 impl Detector for Ecs {
-    fn detect(&self, smbios: &Smbios, env_vars: &HashSet<&str>) -> Option<ComputePlatform> {
-        if !smbios.is_system_vendor(AWS_SYSTEM_VENDOR) {
-            return None;
-        }
-
+    // We cannot detect smbios data in ECS.
+    fn detect(&self, _smbios: &Smbios, env_vars: &HashSet<&str>) -> Option<ComputePlatform> {
         if env_vars.is_empty() {
             return None;
         }
@@ -37,20 +34,13 @@ impl Detector for Ecs {
 pub struct Ec2;
 
 impl Detector for Ec2 {
-    // TODO: better smbios matching.
-    fn detect(&self, smbios: &Smbios, env_vars: &HashSet<&str>) -> Option<ComputePlatform> {
-        if !smbios.is_system_vendor(AWS_SYSTEM_VENDOR) {
+    fn detect(&self, smbios: &Smbios, _env_vars: &HashSet<&str>) -> Option<ComputePlatform> {
+        if !smbios.is_bios_vendor(AWS_SYSTEM_VENDOR) && !smbios.is_system_vendor(AWS_SYSTEM_VENDOR)
+        {
             return None;
         }
 
-        if env_vars.is_empty() {
-            return None;
-        }
-
-        env_vars
-            .iter()
-            .all(|var| self.env_vars().contains(var))
-            .then_some(ComputePlatform::AwsEc2)
+        Some(ComputePlatform::AwsEc2)
     }
 
     fn env_vars(&self) -> &'static [&'static str] {
@@ -62,20 +52,13 @@ impl Detector for Ec2 {
 pub struct Fargate;
 
 impl Detector for Fargate {
-    // TODO: better smbios matching.
-    fn detect(&self, smbios: &Smbios, env_vars: &HashSet<&str>) -> Option<ComputePlatform> {
-        if !smbios.is_system_vendor(AWS_SYSTEM_VENDOR) {
+    fn detect(&self, smbios: &Smbios, _env_vars: &HashSet<&str>) -> Option<ComputePlatform> {
+        if !smbios.is_bios_vendor(AWS_SYSTEM_VENDOR) && !smbios.is_system_vendor(AWS_SYSTEM_VENDOR)
+        {
             return None;
         }
 
-        if env_vars.is_empty() {
-            return None;
-        }
-
-        env_vars
-            .iter()
-            .all(|var| self.env_vars().contains(var))
-            .then_some(ComputePlatform::AwsFargate)
+        Some(ComputePlatform::AwsFargate)
     }
 
     fn env_vars(&self) -> &'static [&'static str] {
@@ -87,11 +70,7 @@ impl Detector for Fargate {
 pub struct Lambda;
 
 impl Detector for Lambda {
-    fn detect(&self, smbios: &Smbios, env_vars: &HashSet<&str>) -> Option<ComputePlatform> {
-        if !smbios.is_system_vendor(AWS_SYSTEM_VENDOR) {
-            return None;
-        }
-
+    fn detect(&self, _smbios: &Smbios, env_vars: &HashSet<&str>) -> Option<ComputePlatform> {
         if env_vars.is_empty() {
             return None;
         }
@@ -124,27 +103,23 @@ mod tests {
     use super::*;
 
     #[rstest]
-    #[case::no_match(&[], Smbios::from(("", "", "")), None)]
-    #[case::smbios_env_match(Ecs.env_vars(), Smbios::from(("", "", AWS_SYSTEM_VENDOR)), Some(ComputePlatform::AwsEcs))]
-    #[case::smbios_no_match(&[], Smbios::from(("", "", AWS_SYSTEM_VENDOR)), None)]
-    fn test_ecs(
-        #[case] input_vars: &[&str],
-        #[case] smbios: Smbios,
-        #[case] expected_platform: Option<ComputePlatform>,
-    ) {
+    #[case::no_match(&[], None)]
+    #[case::env_match(Ecs.env_vars(), Some(ComputePlatform::AwsEcs))]
+    fn test_ecs(#[case] input_vars: &[&str], #[case] expected_platform: Option<ComputePlatform>) {
         let env_vars: HashSet<&str> = input_vars.iter().fold(HashSet::new(), |mut vars, var| {
             vars.insert(var);
             vars
         });
-        let actual_platform = Ecs.detect(&smbios, &env_vars);
+        let actual_platform = Ecs.detect(&Smbios::default(), &env_vars);
         assert_eq!(expected_platform, actual_platform);
     }
 
     #[rstest]
-    #[case::no_match(&[], Smbios::from(("", "", "")), None)]
-    #[case::smbios_env_match(Lambda.env_vars(), Smbios::from(("", "", AWS_SYSTEM_VENDOR)), Some(ComputePlatform::AwsLambda))]
-    #[case::smbios_no_match(&[], Smbios::from(("", "", AWS_SYSTEM_VENDOR)), None)]
-    fn test_lambda(
+    #[case::no_match(&[], Smbios::default(), None)]
+    #[case::smbios_bios_match(Ecs.env_vars(), Smbios::from((AWS_SYSTEM_VENDOR, "", "")), Some(ComputePlatform::AwsEc2))]
+    #[case::smbios_system_match(Ecs.env_vars(), Smbios::from(("", "", AWS_SYSTEM_VENDOR)), Some(ComputePlatform::AwsEc2))]
+    #[case::smbios_bios_system_match(Ecs.env_vars(), Smbios::from((AWS_SYSTEM_VENDOR, "", AWS_SYSTEM_VENDOR)), Some(ComputePlatform::AwsEc2))]
+    fn test_ec2(
         #[case] input_vars: &[&str],
         #[case] smbios: Smbios,
         #[case] expected_platform: Option<ComputePlatform>,
@@ -153,7 +128,40 @@ mod tests {
             vars.insert(var);
             vars
         });
-        let actual_platform = Lambda.detect(&smbios, &env_vars);
+        let actual_platform = Ec2.detect(&smbios, &env_vars);
+        assert_eq!(expected_platform, actual_platform);
+    }
+
+    #[rstest]
+    #[case::no_match(&[], Smbios::default(), None)]
+    #[case::smbios_bios_match(Ecs.env_vars(), Smbios::from((AWS_SYSTEM_VENDOR, "", "")), Some(ComputePlatform::AwsFargate))]
+    #[case::smbios_system_match(Ecs.env_vars(), Smbios::from(("", "", AWS_SYSTEM_VENDOR)), Some(ComputePlatform::AwsFargate))]
+    #[case::smbios_bios_system_match(Ecs.env_vars(), Smbios::from((AWS_SYSTEM_VENDOR, "", AWS_SYSTEM_VENDOR)), Some(ComputePlatform::AwsFargate))]
+    fn test_fargate(
+        #[case] input_vars: &[&str],
+        #[case] smbios: Smbios,
+        #[case] expected_platform: Option<ComputePlatform>,
+    ) {
+        let env_vars: HashSet<&str> = input_vars.iter().fold(HashSet::new(), |mut vars, var| {
+            vars.insert(var);
+            vars
+        });
+        let actual_platform = Fargate.detect(&smbios, &env_vars);
+        assert_eq!(expected_platform, actual_platform);
+    }
+
+    #[rstest]
+    #[case::no_match(&[], None)]
+    #[case::env_match(Lambda.env_vars(), Some(ComputePlatform::AwsLambda))]
+    fn test_lambda(
+        #[case] input_vars: &[&str],
+        #[case] expected_platform: Option<ComputePlatform>,
+    ) {
+        let env_vars: HashSet<&str> = input_vars.iter().fold(HashSet::new(), |mut vars, var| {
+            vars.insert(var);
+            vars
+        });
+        let actual_platform = Lambda.detect(&Smbios::default(), &env_vars);
         assert_eq!(expected_platform, actual_platform);
     }
 }
