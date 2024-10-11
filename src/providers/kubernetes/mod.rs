@@ -2,6 +2,17 @@ use std::collections::HashSet;
 
 use crate::{ComputePlatform, Detector, Smbios};
 
+pub(crate) const KUBERNETES_ENV_VARS: &[&str] = &[
+    "KUBERNETES_PORT",
+    "KUBERNETES_PORT_443_TCP",
+    "KUBERNETES_PORT_443_TCP_ADDR",
+    "KUBERNETES_PORT_443_TCP_PORT",
+    "KUBERNETES_PORT_443_TCP_PROTO",
+    "KUBERNETES_SERVICE_HOST",
+    "KUBERNETES_SERVICE_PORT",
+    "KUBERNETES_SERVICE_PORT_HTTPS",
+];
+
 /// Represents the Kubernetes platform.
 pub struct Kubernetes;
 
@@ -18,16 +29,7 @@ impl Detector for Kubernetes {
     }
 
     fn env_vars(&self) -> &'static [&'static str] {
-        &[
-            "KUBERNETES_PORT",
-            "KUBERNETES_PORT_443_TCP",
-            "KUBERNETES_PORT_443_TCP_ADDR",
-            "KUBERNETES_PORT_443_TCP_PORT",
-            "KUBERNETES_PORT_443_TCP_PROTO",
-            "KUBERNETES_SERVICE_HOST",
-            "KUBERNETES_SERVICE_PORT",
-            "KUBERNETES_SERVICE_PORT_HTTPS",
-        ]
+        KUBERNETES_ENV_VARS
     }
 }
 

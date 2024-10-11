@@ -2,6 +2,27 @@ use std::collections::HashSet;
 
 use crate::{ComputePlatform, Detector, Smbios};
 
+pub(crate) const NOMAD_ENV_VARS: &[&str] = &[
+    "NOMAD_ALLOC_DIR",
+    "NOMAD_ALLOC_ID",
+    "NOMAD_ALLOC_INDEX",
+    "NOMAD_ALLOC_NAME",
+    "NOMAD_CPU_CORES",
+    "NOMAD_CPU_LIMIT",
+    "NOMAD_DC",
+    "NOMAD_GROUP_NAME",
+    "NOMAD_JOB_ID",
+    "NOMAD_JOB_NAME",
+    "NOMAD_MEMORY_LIMIT",
+    "NOMAD_NAMESPACE",
+    "NOMAD_PARENT_CGROUP",
+    "NOMAD_REGION",
+    "NOMAD_SECRETS_DIR",
+    "NOMAD_SHORT_ALLOC_ID",
+    "NOMAD_TASK_DIR",
+    "NOMAD_TASK_NAME",
+];
+
 /// Represents the HashiCorp Nomad platform.
 pub struct Nomad;
 
@@ -18,26 +39,7 @@ impl Detector for Nomad {
     }
 
     fn env_vars(&self) -> &'static [&'static str] {
-        &[
-            "NOMAD_ALLOC_DIR",
-            "NOMAD_ALLOC_ID",
-            "NOMAD_ALLOC_INDEX",
-            "NOMAD_ALLOC_NAME",
-            "NOMAD_CPU_CORES",
-            "NOMAD_CPU_LIMIT",
-            "NOMAD_DC",
-            "NOMAD_GROUP_NAME",
-            "NOMAD_JOB_ID",
-            "NOMAD_JOB_NAME",
-            "NOMAD_MEMORY_LIMIT",
-            "NOMAD_NAMESPACE",
-            "NOMAD_PARENT_CGROUP",
-            "NOMAD_REGION",
-            "NOMAD_SECRETS_DIR",
-            "NOMAD_SHORT_ALLOC_ID",
-            "NOMAD_TASK_DIR",
-            "NOMAD_TASK_NAME",
-        ]
+        NOMAD_ENV_VARS
     }
 }
 
