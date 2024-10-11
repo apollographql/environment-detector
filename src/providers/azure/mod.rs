@@ -72,7 +72,7 @@ mod tests {
     use super::*;
 
     #[rstest]
-    #[case::no_match(&[], Smbios::from(("", "", "")), None)]
+    #[case::no_match(&[], Smbios::default(), None)]
     #[case::smbios_env_match(ContainerApps.env_vars(), Smbios::from(("", "", AZURE_VENDOR)), Some(ComputePlatform::AzureContainerApps))]
     #[case::smbios_no_match(&[], Smbios::from(("", "", AZURE_VENDOR)), None)]
     fn test_container_app(
@@ -89,7 +89,7 @@ mod tests {
     }
 
     #[rstest]
-    #[case::no_match(&[], Smbios::from(("", "", "")), None)]
+    #[case::no_match(&[], Smbios::default(), None)]
     #[case::smbios_env_match(ContainerAppsJob.env_vars(), Smbios::from(("", "", AZURE_VENDOR)), Some(ComputePlatform::AzureContainerAppsJob))]
     #[case::smbios_no_match(&[], Smbios::from(("", "", AZURE_VENDOR)), None)]
     fn test_container_app_job(

@@ -25,7 +25,7 @@ mod tests {
     use super::*;
 
     #[rstest]
-    #[case::no_match(Smbios::from(("", "", "")), None)]
+    #[case::no_match(Smbios::default(), None)]
     #[case::system_vendor_match(Smbios::from(("", "", QEMU_SYSTEM_VENDOR)), Some(ComputePlatform::Qemu))]
     fn test_qemu(#[case] smbios: Smbios, #[case] expected_platform: Option<ComputePlatform>) {
         let actual_platform = Qemu.detect(&smbios, &HashSet::new());

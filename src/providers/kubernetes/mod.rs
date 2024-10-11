@@ -54,7 +54,7 @@ mod tests {
             vars
         });
 
-        let actual_platform = Kubernetes.detect(&Smbios::from(("", "", "")), &env_vars);
+        let actual_platform = Kubernetes.detect(&Smbios::default(), &env_vars);
         assert_eq!(expected_platform, actual_platform);
     }
 }
