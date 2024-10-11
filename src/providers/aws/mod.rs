@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 use crate::{ComputePlatform, Detector, Smbios};
 
-const AWS_SYSTEM_VENDOR: &str = "amazon ec2";
+const AWS_VENDOR: &str = "amazon ec2";
 
 /// Represents the AWS ECS platform.
 pub struct Ecs;
@@ -35,8 +35,7 @@ pub struct Ec2;
 
 impl Detector for Ec2 {
     fn detect(&self, smbios: &Smbios, _env_vars: &HashSet<&str>) -> Option<ComputePlatform> {
-        if !smbios.is_bios_vendor(AWS_SYSTEM_VENDOR) && !smbios.is_system_vendor(AWS_SYSTEM_VENDOR)
-        {
+        if !smbios.is_bios_vendor(AWS_VENDOR) && !smbios.is_system_vendor(AWS_VENDOR) {
             return None;
         }
 
@@ -53,8 +52,7 @@ pub struct Fargate;
 
 impl Detector for Fargate {
     fn detect(&self, smbios: &Smbios, _env_vars: &HashSet<&str>) -> Option<ComputePlatform> {
-        if !smbios.is_bios_vendor(AWS_SYSTEM_VENDOR) && !smbios.is_system_vendor(AWS_SYSTEM_VENDOR)
-        {
+        if !smbios.is_bios_vendor(AWS_VENDOR) && !smbios.is_system_vendor(AWS_VENDOR) {
             return None;
         }
 
@@ -116,9 +114,9 @@ mod tests {
 
     #[rstest]
     #[case::no_match(&[], Smbios::default(), None)]
-    #[case::smbios_bios_match(Ecs.env_vars(), Smbios::from((AWS_SYSTEM_VENDOR, "", "")), Some(ComputePlatform::AwsEc2))]
-    #[case::smbios_system_match(Ecs.env_vars(), Smbios::from(("", "", AWS_SYSTEM_VENDOR)), Some(ComputePlatform::AwsEc2))]
-    #[case::smbios_bios_system_match(Ecs.env_vars(), Smbios::from((AWS_SYSTEM_VENDOR, "", AWS_SYSTEM_VENDOR)), Some(ComputePlatform::AwsEc2))]
+    #[case::smbios_bios_match(Ecs.env_vars(), Smbios::from((AWS_VENDOR, "", "")), Some(ComputePlatform::AwsEc2))]
+    #[case::smbios_system_match(Ecs.env_vars(), Smbios::from(("", "", AWS_VENDOR)), Some(ComputePlatform::AwsEc2))]
+    #[case::smbios_bios_system_match(Ecs.env_vars(), Smbios::from((AWS_VENDOR, "", AWS_VENDOR)), Some(ComputePlatform::AwsEc2))]
     fn test_ec2(
         #[case] input_vars: &[&str],
         #[case] smbios: Smbios,
@@ -134,9 +132,9 @@ mod tests {
 
     #[rstest]
     #[case::no_match(&[], Smbios::default(), None)]
-    #[case::smbios_bios_match(Ecs.env_vars(), Smbios::from((AWS_SYSTEM_VENDOR, "", "")), Some(ComputePlatform::AwsFargate))]
-    #[case::smbios_system_match(Ecs.env_vars(), Smbios::from(("", "", AWS_SYSTEM_VENDOR)), Some(ComputePlatform::AwsFargate))]
-    #[case::smbios_bios_system_match(Ecs.env_vars(), Smbios::from((AWS_SYSTEM_VENDOR, "", AWS_SYSTEM_VENDOR)), Some(ComputePlatform::AwsFargate))]
+    #[case::smbios_bios_match(Ecs.env_vars(), Smbios::from((AWS_VENDOR, "", "")), Some(ComputePlatform::AwsFargate))]
+    #[case::smbios_system_match(Ecs.env_vars(), Smbios::from(("", "", AWS_VENDOR)), Some(ComputePlatform::AwsFargate))]
+    #[case::smbios_bios_system_match(Ecs.env_vars(), Smbios::from((AWS_VENDOR, "", AWS_VENDOR)), Some(ComputePlatform::AwsFargate))]
     fn test_fargate(
         #[case] input_vars: &[&str],
         #[case] smbios: Smbios,
