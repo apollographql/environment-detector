@@ -4,10 +4,10 @@ use crate::{ComputePlatform, Detector, Smbios};
 
 const AZURE_VENDOR: &str = "microsoft";
 
-/// Represents the Azure Container App platform.
-pub struct ContainerApp;
+/// Represents the Azure Container Apps platform.
+pub struct ContainerApps;
 
-impl Detector for ContainerApp {
+impl Detector for ContainerApps {
     fn detect(&self, smbios: &Smbios, env_vars: &HashSet<&str>) -> Option<ComputePlatform> {
         if !smbios.is_system_vendor(AZURE_VENDOR) {
             return None;
@@ -20,7 +20,7 @@ impl Detector for ContainerApp {
         env_vars
             .iter()
             .all(|var| self.env_vars().contains(var))
-            .then_some(ComputePlatform::AzureContainerApp)
+            .then_some(ComputePlatform::AzureContainerApps)
     }
 
     fn env_vars(&self) -> &'static [&'static str] {
@@ -35,10 +35,10 @@ impl Detector for ContainerApp {
     }
 }
 
-/// Represents the Azure Container App Job platform.
-pub struct ContainerAppJob;
+/// Represents the Azure Container Apps Job platform.
+pub struct ContainerAppsJob;
 
-impl Detector for ContainerAppJob {
+impl Detector for ContainerAppsJob {
     fn detect(&self, smbios: &Smbios, env_vars: &HashSet<&str>) -> Option<ComputePlatform> {
         if !smbios.is_system_vendor(AZURE_VENDOR) {
             return None;
@@ -51,7 +51,7 @@ impl Detector for ContainerAppJob {
         env_vars
             .iter()
             .all(|var| self.env_vars().contains(var))
-            .then_some(ComputePlatform::AzureContainerAppJob)
+            .then_some(ComputePlatform::AzureContainerAppsJob)
     }
 
     fn env_vars(&self) -> &'static [&'static str] {
@@ -73,7 +73,7 @@ mod tests {
 
     #[rstest]
     #[case::no_match(&[], Smbios::from(("", "", "")), None)]
-    #[case::smbios_env_match(ContainerApp.env_vars(), Smbios::from(("", "", AZURE_VENDOR)), Some(ComputePlatform::AzureContainerApp))]
+    #[case::smbios_env_match(ContainerApps.env_vars(), Smbios::from(("", "", AZURE_VENDOR)), Some(ComputePlatform::AzureContainerApps))]
     #[case::smbios_no_match(&[], Smbios::from(("", "", AZURE_VENDOR)), None)]
     fn test_container_app(
         #[case] input_vars: &[&str],
@@ -84,13 +84,13 @@ mod tests {
             vars.insert(var);
             vars
         });
-        let actual_platform = ContainerApp.detect(&smbios, &env_vars);
+        let actual_platform = ContainerApps.detect(&smbios, &env_vars);
         assert_eq!(expected_platform, actual_platform);
     }
 
     #[rstest]
     #[case::no_match(&[], Smbios::from(("", "", "")), None)]
-    #[case::smbios_env_match(ContainerAppJob.env_vars(), Smbios::from(("", "", AZURE_VENDOR)), Some(ComputePlatform::AzureContainerAppJob))]
+    #[case::smbios_env_match(ContainerAppsJob.env_vars(), Smbios::from(("", "", AZURE_VENDOR)), Some(ComputePlatform::AzureContainerAppsJob))]
     #[case::smbios_no_match(&[], Smbios::from(("", "", AZURE_VENDOR)), None)]
     fn test_container_app_job(
         #[case] input_vars: &[&str],
@@ -101,7 +101,7 @@ mod tests {
             vars.insert(var);
             vars
         });
-        let actual_platform = ContainerAppJob.detect(&smbios, &env_vars);
+        let actual_platform = ContainerAppsJob.detect(&smbios, &env_vars);
         assert_eq!(expected_platform, actual_platform);
     }
 }

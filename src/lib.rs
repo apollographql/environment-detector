@@ -25,7 +25,8 @@ pub fn get_compute_platform() -> Option<ComputePlatform> {
         .iter()
         .filter_map(|detector| detector.detect(&smbios, &env_vars))
         .fold(None, |acc, new| match acc {
-            Some(old) => Some(if old > new { old } else { new }),
+            // TODO: need to use is_superset_of here.
+            Some(old) => Some(old),
             None => Some(new),
         });
 
@@ -47,8 +48,8 @@ fn get_detectors() -> Vec<Box<dyn Detector>> {
         Box::new(aws::Ec2),
         Box::new(aws::Fargate),
         Box::new(aws::Lambda),
-        Box::new(azure::ContainerApp),
-        Box::new(azure::ContainerAppJob),
+        Box::new(azure::ContainerApps),
+        Box::new(azure::ContainerAppsJob),
         Box::new(gcp::CloudRunGen1),
         Box::new(gcp::CloudRunGen2),
         Box::new(gcp::CloudRunJob),
