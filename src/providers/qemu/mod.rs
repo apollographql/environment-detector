@@ -8,11 +8,9 @@ pub struct Qemu;
 
 impl Detector for Qemu {
     fn detect(&self, smbios: &Smbios, _env_vars: &HashSet<&str>) -> Option<ComputePlatform> {
-        if smbios.is_system_vendor(QEMU_SYSTEM_VENDOR) {
-            return Some(ComputePlatform::Qemu);
-        }
-
-        None
+        smbios
+            .is_system_vendor(QEMU_SYSTEM_VENDOR)
+            .then_some(ComputePlatform::Qemu)
     }
 
     fn env_vars(&self) -> &'static [&'static str] {
