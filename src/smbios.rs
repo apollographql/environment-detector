@@ -28,6 +28,10 @@ impl Smbios {
 
     /// Returns `true` if the given bios vendor matches that stored in the dmi data.
     pub fn is_bios_vendor(&self, vendor: &str) -> bool {
+        if vendor.is_empty() {
+            return false;
+        }
+
         if let Some(v) = self.dmi_bios_vendor.as_ref() {
             return v.contains(vendor);
         }
@@ -36,9 +40,13 @@ impl Smbios {
     }
 
     /// Returns `true` if the given product name matches that stored in the dmi data.
-    pub fn is_product_name(&self, name: &str) -> bool {
+    pub fn is_product_name(&self, product_name: &str) -> bool {
+        if product_name.is_empty() {
+            return false;
+        }
+
         if let Some(v) = self.dmi_product_name.as_ref() {
-            return v.contains(name);
+            return v.contains(product_name);
         }
 
         false
@@ -46,6 +54,10 @@ impl Smbios {
 
     /// Returns `true` if the given system vendor matches that stored in the dmi data.
     pub fn is_system_vendor(&self, vendor: &str) -> bool {
+        if vendor.is_empty() {
+            return false;
+        }
+
         if let Some(v) = self.dmi_sys_vendor.as_ref() {
             return v.contains(vendor);
         }
@@ -83,5 +95,39 @@ fn read_dmi_data(path: &str) -> Option<String> {
         None
     } else {
         Some(data.trim().to_lowercase())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use rstest::rstest;
+
+    use super::Smbios;
+
+    #[rstest]
+    #[case("bios_vendor", true)]
+    #[case("", false)]
+    fn test_is_bios_vendor(#[case] vendor: &str, #[case] expected: bool) {
+        let smbios = Smbios::from(("bios_vendor", "", ""));
+        let actual = smbios.is_bios_vendor(vendor);
+        assert_eq!(expected, actual);
+    }
+
+    #[rstest]
+    #[case("product_name", true)]
+    #[case("", false)]
+    fn test_is_product_name(#[case] product_name: &str, #[case] expected: bool) {
+        let smbios = Smbios::from(("", "product_name", ""));
+        let actual = smbios.is_product_name(product_name);
+        assert_eq!(expected, actual);
+    }
+
+    #[rstest]
+    #[case("system_vendor", true)]
+    #[case("", false)]
+    fn test_is_system_vendor(#[case] vendor: &str, #[case] expected: bool) {
+        let smbios = Smbios::from(("", "", "system_vendor"));
+        let actual = smbios.is_system_vendor(vendor);
+        assert_eq!(expected, actual);
     }
 }
