@@ -1,9 +1,5 @@
 use std::ops::Not;
 
-const DMI_BIOS_VENDOR: &str = "/sys/class/dmi/id/bios_vendor";
-const DMI_PRODUCT_NAME: &str = "/sys/class/dmi/id/product_name";
-const DMI_SYS_VENDOR: &str = "/sys/class/dmi/id/sys_vendor";
-
 /// Represents data obtained from SMBIOS.
 #[derive(Debug, Default)]
 pub struct Smbios {
@@ -13,16 +9,53 @@ pub struct Smbios {
 }
 
 impl Smbios {
+    #[cfg(target_os = "linux")]
     pub fn new() -> Self {
-        #[cfg(target_os = "linux")]
         Self {
-            dmi_bios_vendor: read_dmi_data(DMI_BIOS_VENDOR),
-            dmi_product_name: read_dmi_data(DMI_PRODUCT_NAME),
-            dmi_sys_vendor: read_dmi_data(DMI_SYS_VENDOR),
+            dmi_bios_vendor: read_dmi_data("/sys/class/dmi/id/bios_vendor"),
+            dmi_product_name: read_dmi_data("/sys/class/dmi/id/product_name"),
+            dmi_sys_vendor: read_dmi_data("/sys/class/dmi/id/sys_vendor"),
+        }
+    }
+
+    #[cfg(target_os = "windows")]
+    pub fn new() -> Self {
+        use serde::Deserialize;
+        use wmi::{COMLibrary, WMIConnection};
+
+        #[derive(Deserialize)]
+        #[serde(rename = "Win32_ComputerSystemProduct")]
+        #[serde(rename_all = "PascalCase")]
+        struct ComputerSystemProduct {
+            name: String,
+            vendor: String,
+        }
+
+        let Ok(com) = COMLibrary::new() else {
+            return Self::default();
         };
-        #[cfg(target_os = "windows")]
-        unimplemented!();
-        #[cfg(not(any(target_os = "linux", target_os = "windows")))]
+
+        let Ok(wmi_con) = WMIConnection::new(com) else {
+            return Self::default();
+        };
+
+        let Ok::<Vec<ComputerSystemProduct>, _>(results) = wmi_con.query() else {
+            return Self::default();
+        };
+
+        let Some(product) = results.get(0) else {
+            return Self::default();
+        };
+
+        Self {
+            dmi_bios_vendor: Some(product.vendor.to_string()),
+            dmi_product_name: Some(product.name.to_string()),
+            dmi_sys_vendor: None,
+        }
+    }
+
+    #[cfg(not(any(target_os = "linux", target_os = "windows")))]
+    pub fn new() -> Self {
         Self::default()
     }
 
@@ -88,14 +121,11 @@ impl From<(&str, &str, &str)> for Smbios {
 // Attempts to read dmi data from sysfs.
 //
 // Returns `None` on error.
+#[cfg(target_os = "linux")]
 fn read_dmi_data(path: &str) -> Option<String> {
     let bytes = std::fs::read(path).ok()?;
     let data = String::from_utf8(bytes).ok()?;
-    if data.is_empty() {
-        None
-    } else {
-        Some(data.trim().to_lowercase())
-    }
+    data.is_empty().then(|| data.trim().to_lowercase())
 }
 
 #[cfg(test)]
