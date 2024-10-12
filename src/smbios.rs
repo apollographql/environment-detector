@@ -48,8 +48,8 @@ impl Smbios {
         };
 
         Self {
-            dmi_bios_vendor: Some(product.vendor.to_string()),
-            dmi_product_name: Some(product.name.to_string()),
+            dmi_bios_vendor: Some(product.vendor.trim().to_lowercase()),
+            dmi_product_name: Some(product.name.trim().to_lowercase()),
             dmi_sys_vendor: None,
         }
     }
