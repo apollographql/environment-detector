@@ -41,24 +41,6 @@ where
     }
 }
 
-#[cfg(test)]
-#[rstest::rstest]
-#[case(&["a", "b", "c"], &["a", "b"], Some(Ordering::Greater))]
-#[case(&["a", "b", "c"], &["a", "b", "c"], Some(Ordering::Equal))]
-#[case(&["a", "b"], &["a", "b", "c"], Some(Ordering::Less))]
-#[case(&["a", "b"], &["a", "c"], None)]
-fn test_hashset(
-    #[case] left: &'static [&'static str],
-    #[case] right: &'static [&'static str],
-    #[case] expected: Option<Ordering>,
-) {
-    let left: HashSet<_> = left.into_iter().collect();
-    let right: HashSet<_> = right.into_iter().collect();
-
-    let result = left.specificity_cmp(&right);
-    assert_eq!(result, expected);
-}
-
 pub trait OrderingExt {
     fn merge_specificity(self, other: Self) -> Self;
 }
@@ -77,5 +59,42 @@ impl OrderingExt for Option<Ordering> {
             (Some(Ordering::Less), Some(Ordering::Greater)) => None,
             (_, None) | (None, _) => None,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rstest::rstest;
+
+    #[rstest]
+    #[case(Some(3), None, Some(Ordering::Greater))]
+    #[case(Some(3), Some(3), Some(Ordering::Equal))]
+    #[case(None, Some(3), Some(Ordering::Less))]
+    #[case(Some(2), Some(3), None)]
+    fn test_option(
+        #[case] left: Option<usize>,
+        #[case] right: Option<usize>,
+        #[case] expected: Option<Ordering>,
+    ) {
+        let result = left.specificity_cmp(&right);
+        assert_eq!(result, expected);
+    }
+
+    #[rstest]
+    #[case(&["a", "b", "c"], &["a", "b"], Some(Ordering::Greater))]
+    #[case(&["a", "b", "c"], &["a", "b", "c"], Some(Ordering::Equal))]
+    #[case(&["a", "b"], &["a", "b", "c"], Some(Ordering::Less))]
+    #[case(&["a", "b"], &["a", "c"], None)]
+    fn test_hashset(
+        #[case] left: &'static [&'static str],
+        #[case] right: &'static [&'static str],
+        #[case] expected: Option<Ordering>,
+    ) {
+        let left: HashSet<_> = left.into_iter().collect();
+        let right: HashSet<_> = right.into_iter().collect();
+
+        let result = left.specificity_cmp(&right);
+        assert_eq!(result, expected);
     }
 }

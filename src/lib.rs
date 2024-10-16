@@ -11,7 +11,7 @@ mod smbios;
 mod specificity;
 
 /// Represents the currently supported compute platforms.
-#[derive(Clone, Copy, Debug, Eq, PartialEq, EnumIter)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, EnumIter, Hash)]
 pub enum ComputeEnvironment {
     // AWS supported platforms.
     AwsEc2,
@@ -115,4 +115,94 @@ pub fn detect() -> Option<ComputeEnvironment> {
         });
 
     detector.map(|detector| detector.environment)
+}
+
+#[cfg(test)]
+mod tests {
+    use std::collections::HashMap;
+
+    use rstest::{fixture, rstest};
+
+    use super::*;
+
+    #[fixture]
+    fn expected_matrix() -> HashMap<(ComputeEnvironment, ComputeEnvironment), Option<Ordering>> {
+        let envs: HashMap<_, _> = ComputeEnvironment::iter().enumerate().collect();
+        let matrix = include_str!("specificity_matrix.txt");
+        matrix
+            .split('\n')
+            .enumerate()
+            .flat_map(|(y, line)| {
+                let envs = &envs;
+                line.chars().enumerate().map(move |(x, c)| {
+                    (
+                        (*envs.get(&y).unwrap(), *envs.get(&x).unwrap()),
+                        match c {
+                            '-' => Some(Ordering::Less),
+                            '=' => Some(Ordering::Equal),
+                            '+' => Some(Ordering::Greater),
+                            _ => None,
+                        },
+                    )
+                })
+            })
+            .collect()
+    }
+
+    #[rstest]
+    fn test_specificity(
+        #[values(
+            ComputeEnvironment::AwsEc2,
+            ComputeEnvironment::AwsEcs,
+            ComputeEnvironment::AwsLambda,
+            ComputeEnvironment::AwsKubernetes,
+            ComputeEnvironment::AwsNomad,
+            ComputeEnvironment::AzureContainerApps,
+            ComputeEnvironment::AzureContainerAppsJob,
+            ComputeEnvironment::AzureContainerInstance,
+            ComputeEnvironment::AzureKubernetes,
+            ComputeEnvironment::AzureVM,
+            ComputeEnvironment::AzureNomad,
+            ComputeEnvironment::GcpCloudRunGen1,
+            ComputeEnvironment::GcpCloudRunGen2,
+            ComputeEnvironment::GcpCloudRunJob,
+            ComputeEnvironment::GcpComputeEngine,
+            ComputeEnvironment::GcpKubernetes,
+            ComputeEnvironment::GcpNomad,
+            ComputeEnvironment::Kubernetes,
+            ComputeEnvironment::Nomad,
+            ComputeEnvironment::Qemu
+        )]
+        left: ComputeEnvironment,
+        #[values(
+            ComputeEnvironment::AwsEc2,
+            ComputeEnvironment::AwsEcs,
+            ComputeEnvironment::AwsLambda,
+            ComputeEnvironment::AwsKubernetes,
+            ComputeEnvironment::AwsNomad,
+            ComputeEnvironment::AzureContainerApps,
+            ComputeEnvironment::AzureContainerAppsJob,
+            ComputeEnvironment::AzureContainerInstance,
+            ComputeEnvironment::AzureKubernetes,
+            ComputeEnvironment::AzureVM,
+            ComputeEnvironment::AzureNomad,
+            ComputeEnvironment::GcpCloudRunGen1,
+            ComputeEnvironment::GcpCloudRunGen2,
+            ComputeEnvironment::GcpCloudRunJob,
+            ComputeEnvironment::GcpComputeEngine,
+            ComputeEnvironment::GcpKubernetes,
+            ComputeEnvironment::GcpNomad,
+            ComputeEnvironment::Kubernetes,
+            ComputeEnvironment::Nomad,
+            ComputeEnvironment::Qemu
+        )]
+        right: ComputeEnvironment,
+        expected_matrix: HashMap<(ComputeEnvironment, ComputeEnvironment), Option<Ordering>>,
+    ) {
+        let expected = expected_matrix.get(&(left, right)).cloned().flatten();
+
+        let result = left.detector().specificity_cmp(&right.detector());
+
+        assert_eq!(expected, result);
+    }
 }
