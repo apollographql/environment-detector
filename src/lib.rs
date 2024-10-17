@@ -1,161 +1,84 @@
 use std::{cmp::Ordering, collections::HashSet, ops::Deref};
 
 use detector::Detector;
+pub use environment::{CloudProvider, ComputeEnvironment};
 use smbios::Smbios;
 use specificity::Specificity as _;
-use strum::{EnumIter, IntoEnumIterator as _};
 
 mod detector;
-mod env;
+mod env_vars;
+mod environment;
 mod smbios;
 mod specificity;
 
-/// Represents the currently supported compute platforms.
-#[derive(Clone, Copy, Debug, Eq, PartialEq, EnumIter, Hash)]
-pub enum ComputeEnvironment {
-    // AWS supported platforms.
-    AwsEc2,
-    AwsEcs,
-    // AwsFargate,
-    AwsLambda,
-    AwsKubernetes,
-    AwsNomad,
-
-    // Azure supported platforms.
-    AzureContainerApps,
-    AzureContainerAppsJob,
-    AzureContainerInstance,
-    AzureKubernetes,
-    AzureVM,
-    AzureNomad,
-
-    // GCP supported platforms.
-    GcpCloudRunGen1,
-    GcpCloudRunGen2,
-    GcpCloudRunJob,
-    GcpComputeEngine,
-    GcpKubernetes,
-    GcpNomad,
-
-    // Generic supported platforms.
-    Kubernetes,
-    Nomad,
-    Qemu,
-}
-
-impl ComputeEnvironment {
-    pub(crate) fn detector(&self) -> Detector {
-        match self {
-            ComputeEnvironment::AwsEc2 => Detector::new(*self, smbios::AWS, env::EMPTY),
-            ComputeEnvironment::AwsEcs => Detector::new(*self, smbios::EMPTY, env::AWS_ECS),
-            ComputeEnvironment::AwsLambda => Detector::new(*self, smbios::EMPTY, env::AWS_LAMBDA),
-            ComputeEnvironment::AwsKubernetes => Detector::new(*self, smbios::AWS, env::KUBERNETES),
-            ComputeEnvironment::AwsNomad => Detector::new(*self, smbios::AWS, env::NOMAD),
-            ComputeEnvironment::AzureContainerApps => {
-                Detector::new(*self, smbios::AZURE, env::AZURE_CONTAINER_APPS)
-            }
-            ComputeEnvironment::AzureContainerAppsJob => {
-                Detector::new(*self, smbios::AZURE, env::AZURE_CONTAINER_APPS_JOB)
-            }
-            Self::AzureContainerInstance => {
-                Detector::new(*self, smbios::EMPTY, env::AZURE_CONTAINER_INSTANCE)
-            }
-            ComputeEnvironment::AzureKubernetes => {
-                Detector::new(*self, smbios::AZURE, env::KUBERNETES)
-            }
-            ComputeEnvironment::AzureVM => Detector::new(*self, smbios::AZURE, env::EMPTY),
-            ComputeEnvironment::AzureNomad => Detector::new(*self, smbios::AZURE, env::NOMAD),
-            ComputeEnvironment::GcpCloudRunGen1 => {
-                Detector::new(*self, smbios::EMPTY, env::GCP_CLOUD_RUN_SERVICE)
-            }
-            ComputeEnvironment::GcpCloudRunGen2 => {
-                Detector::new(*self, smbios::GCP, env::GCP_CLOUD_RUN_SERVICE)
-            }
-            ComputeEnvironment::GcpCloudRunJob => {
-                Detector::new(*self, smbios::GCP, env::GCP_CLOUD_RUN_JOB)
-            }
-            ComputeEnvironment::GcpComputeEngine => Detector::new(*self, smbios::GCP, env::EMPTY),
-            ComputeEnvironment::GcpKubernetes => Detector::new(*self, smbios::GCP, env::KUBERNETES),
-            ComputeEnvironment::GcpNomad => Detector::new(*self, smbios::GCP, env::NOMAD),
-            ComputeEnvironment::Kubernetes => Detector::new(*self, smbios::EMPTY, env::KUBERNETES),
-            ComputeEnvironment::Nomad => Detector::new(*self, smbios::EMPTY, env::NOMAD),
-            ComputeEnvironment::Qemu => Detector::new(*self, smbios::QEMU, env::EMPTY),
-        }
-    }
-}
-
-/// Attempts to calculate a compute environment based on SMBIOS data and environment variables present
-/// at runtime.
-pub fn detect() -> Option<ComputeEnvironment> {
+/// Detect potential [`ComputeEnvironment`]s above a certain match threshold
+///
+/// This return an ordered [`Vec`], with the most likely candidates first.
+pub fn detect(threshold: u16) -> Vec<(ComputeEnvironment, u16)> {
     let detectors: Vec<_> = ComputeEnvironment::iter().map(|ce| ce.detector()).collect();
 
     // Read current environment variables
     let env_vars: HashSet<_> = detectors
         .iter()
         .flat_map(|detector| detector.env_vars)
-        .filter(|var| env::hasenv(var))
+        .filter(|var| env_vars::hasenv(var))
         .map(Deref::deref)
         .collect();
 
     // Read SMBIOS data
     let smbios = Smbios::detect();
 
-    dbg!(&env_vars);
-    dbg!(&smbios);
-
     // Run detectors against env vars and SMBIOS data
-    let detector = detectors
-        .into_iter()
-        .filter(|detector| detector.detect(&smbios, &env_vars))
-        .fold(None, |acc: Option<Detector>, new| match acc {
-            None => Some(new),
-            Some(old) => match old.specificity_cmp(&new) {
-                Some(Ordering::Greater) | Some(Ordering::Equal) => Some(old),
-                Some(Ordering::Less) => Some(new),
-                None => {
-                    // TODO: this shouldn't happen
-                    Some(old)
-                }
-            },
-        });
+    detect_inner(detectors, smbios, env_vars, threshold)
+}
 
-    detector.map(|detector| detector.environment)
+/// Detect
+fn detect_inner(
+    detectors: Vec<Detector>,
+    smbios: Smbios,
+    env_vars: HashSet<&'static str>,
+    threshold: u16,
+) -> Vec<(ComputeEnvironment, u16)> {
+    let mut detectors: Vec<_> = detectors
+        .into_iter()
+        .filter_map(|detector| {
+            let score = detector.detect(&smbios, &env_vars);
+            if score >= threshold {
+                Some((detector, score))
+            } else {
+                None
+            }
+        })
+        .collect();
+
+    detectors.sort_by(|(left, left_score), (right, right_score)| {
+        match Ord::cmp(left_score, right_score) {
+            Ordering::Equal => left
+                .specificity_cmp(right)
+                .unwrap_or(Ordering::Equal)
+                .reverse(),
+            o => o.reverse(),
+        }
+    });
+    detectors
+        .into_iter()
+        .map(|(detector, score)| (detector.environment, score))
+        .collect()
 }
 
 #[cfg(test)]
 mod tests {
-    use std::collections::HashMap;
-
     use rstest::{fixture, rstest};
 
     use super::*;
 
     #[fixture]
-    fn expected_matrix() -> HashMap<(ComputeEnvironment, ComputeEnvironment), Option<Ordering>> {
-        let envs: HashMap<_, _> = ComputeEnvironment::iter().enumerate().collect();
-        let matrix = include_str!("specificity_matrix.txt");
-        matrix
-            .split('\n')
-            .enumerate()
-            .flat_map(|(y, line)| {
-                let envs = &envs;
-                line.chars().enumerate().map(move |(x, c)| {
-                    (
-                        (*envs.get(&y).unwrap(), *envs.get(&x).unwrap()),
-                        match c {
-                            '-' => Some(Ordering::Less),
-                            '=' => Some(Ordering::Equal),
-                            '+' => Some(Ordering::Greater),
-                            _ => None,
-                        },
-                    )
-                })
-            })
-            .collect()
+    fn detectors() -> Vec<Detector> {
+        ComputeEnvironment::iter().map(|ce| ce.detector()).collect()
     }
 
     #[rstest]
-    fn test_specificity(
+    fn test_complete(
         #[values(
             ComputeEnvironment::AwsEc2,
             ComputeEnvironment::AwsEcs,
@@ -178,36 +101,64 @@ mod tests {
             ComputeEnvironment::Nomad,
             ComputeEnvironment::Qemu
         )]
-        left: ComputeEnvironment,
-        #[values(
-            ComputeEnvironment::AwsEc2,
-            ComputeEnvironment::AwsEcs,
-            ComputeEnvironment::AwsLambda,
-            ComputeEnvironment::AwsKubernetes,
-            ComputeEnvironment::AwsNomad,
-            ComputeEnvironment::AzureContainerApps,
-            ComputeEnvironment::AzureContainerAppsJob,
-            ComputeEnvironment::AzureContainerInstance,
-            ComputeEnvironment::AzureKubernetes,
-            ComputeEnvironment::AzureVM,
-            ComputeEnvironment::AzureNomad,
-            ComputeEnvironment::GcpCloudRunGen1,
-            ComputeEnvironment::GcpCloudRunGen2,
-            ComputeEnvironment::GcpCloudRunJob,
-            ComputeEnvironment::GcpComputeEngine,
-            ComputeEnvironment::GcpKubernetes,
-            ComputeEnvironment::GcpNomad,
-            ComputeEnvironment::Kubernetes,
-            ComputeEnvironment::Nomad,
-            ComputeEnvironment::Qemu
-        )]
-        right: ComputeEnvironment,
-        expected_matrix: HashMap<(ComputeEnvironment, ComputeEnvironment), Option<Ordering>>,
+        environment: ComputeEnvironment,
+        detectors: Vec<Detector>,
     ) {
-        let expected = expected_matrix.get(&(left, right)).cloned().flatten();
+        let smbios: Smbios = environment.detector().smbios.clone().into();
+        let env_vars: HashSet<_> = environment
+            .detector()
+            .env_vars
+            .into_iter()
+            .map(Deref::deref)
+            .collect();
 
-        let result = left.detector().specificity_cmp(&right.detector());
+        let result = detect_inner(detectors, smbios, env_vars, u16::MIN);
 
-        assert_eq!(expected, result);
+        assert_eq!(result.first().map(|(ce, _)| ce), Some(&environment));
+    }
+
+    #[rstest]
+    fn test_partial_1_env_vars(
+        #[values(
+            ComputeEnvironment::AwsEc2,
+            ComputeEnvironment::AwsEcs,
+            ComputeEnvironment::AwsLambda,
+            ComputeEnvironment::AwsKubernetes,
+            ComputeEnvironment::AwsNomad,
+            ComputeEnvironment::AzureContainerApps,
+            ComputeEnvironment::AzureContainerAppsJob,
+            ComputeEnvironment::AzureContainerInstance,
+            ComputeEnvironment::AzureKubernetes,
+            ComputeEnvironment::AzureVM,
+            ComputeEnvironment::AzureNomad,
+            ComputeEnvironment::GcpCloudRunGen1,
+            ComputeEnvironment::GcpCloudRunGen2,
+            ComputeEnvironment::GcpCloudRunJob,
+            ComputeEnvironment::GcpComputeEngine,
+            ComputeEnvironment::GcpKubernetes,
+            ComputeEnvironment::GcpNomad,
+            ComputeEnvironment::Kubernetes,
+            ComputeEnvironment::Nomad,
+            ComputeEnvironment::Qemu
+        )]
+        environment: ComputeEnvironment,
+        detectors: Vec<Detector>,
+    ) {
+        let smbios: Smbios = environment.detector().smbios.clone().into();
+        let env_vars = environment.detector().env_vars.to_vec();
+
+        for i in 0..(env_vars.len()) {
+            let mut env_vars = env_vars.clone();
+            let removed = env_vars.remove(i);
+            let env_vars = env_vars.into_iter().collect();
+
+            let result = detect_inner(detectors.clone(), smbios.clone(), env_vars, u16::MIN);
+
+            assert_eq!(
+                result.first().map(|(ce, _)| ce),
+                Some(&environment),
+                "mismatch with {removed} removed"
+            );
+        }
     }
 }
