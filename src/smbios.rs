@@ -93,7 +93,11 @@ impl Specificity for SmbiosPattern {
 fn read_dmi_data(path: &str) -> Option<String> {
     let bytes = std::fs::read(path).ok()?;
     let data = String::from_utf8(bytes).ok()?;
-    data.is_empty().then(|| data.trim().to_lowercase())
+    if data.is_empty() {
+        None
+    } else {
+        Some(data.trim().to_string())
+    }
 }
 
 #[derive(Default, Debug)]

@@ -89,7 +89,7 @@ impl ComputeEnvironment {
 pub fn detect() -> Option<ComputeEnvironment> {
     let detectors: Vec<_> = ComputeEnvironment::iter().map(|ce| ce.detector()).collect();
 
-    // Read current environment variables and match against those expected by supported platforms.
+    // Read current environment variables
     let env_vars: HashSet<_> = detectors
         .iter()
         .flat_map(|detector| detector.env_vars)
@@ -97,8 +97,13 @@ pub fn detect() -> Option<ComputeEnvironment> {
         .map(Deref::deref)
         .collect();
 
-    // // Using SMBIOS and env var data, attempt to detect a platform.
+    // Read SMBIOS data
     let smbios = Smbios::detect();
+
+    dbg!(&env_vars);
+    dbg!(&smbios);
+
+    // Run detectors against env vars and SMBIOS data
     let detector = detectors
         .into_iter()
         .filter(|detector| detector.detect(&smbios, &env_vars))
