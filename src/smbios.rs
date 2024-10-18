@@ -15,7 +15,7 @@ pub const GCP: SmbiosPattern = SmbiosPattern::new()
 pub const QEMU: SmbiosPattern = SmbiosPattern::new().with_sys_vendor("qemu");
 
 /// Represents data obtained from SMBIOS.
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct Smbios {
     bios_vendor: Option<String>,
     product_name: Option<String>,
@@ -74,15 +74,13 @@ impl Smbios {
     }
 }
 
-impl Specificity for SmbiosPattern {
-    fn specificity_cmp(&self, other: &Self) -> Option<Ordering> {
-        let bios_vendor = self.bios_vendor.specificity_cmp(&other.bios_vendor);
-        let product_name = self.product_name.specificity_cmp(&other.product_name);
-        let sys_vendor = self.sys_vendor.specificity_cmp(&other.sys_vendor);
-
-        bios_vendor
-            .merge_specificity(product_name)
-            .merge_specificity(sys_vendor)
+impl From<SmbiosPattern> for Smbios {
+    fn from(value: SmbiosPattern) -> Self {
+        Self {
+            bios_vendor: value.bios_vendor.map(ToString::to_string),
+            product_name: value.product_name.map(ToString::to_string),
+            sys_vendor: value.sys_vendor.map(ToString::to_string),
+        }
     }
 }
 
@@ -100,7 +98,7 @@ fn read_dmi_data(path: &str) -> Option<String> {
     }
 }
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Clone)]
 pub struct SmbiosPattern {
     bios_vendor: Option<&'static str>,
     product_name: Option<&'static str>,
@@ -108,42 +106,54 @@ pub struct SmbiosPattern {
 }
 
 impl SmbiosPattern {
-    /// Returns `true` if the [`Smbios`] matches the pattern in this object.
-    pub fn matches(&self, smbios: &Smbios) -> bool {
+    /// Returns how many SMBIOS data points are matching the pattern
+    ///
+    /// This returns a score from 0 to 16384
+    pub fn detect(&self, smbios: &Smbios) -> u16 {
+        let mut total = 0;
+        let mut found = 0;
         if let Some(bios_vendor) = self.bios_vendor {
-            if !smbios
+            total += 1;
+            if smbios
                 .bios_vendor
                 .as_ref()
                 .map(|detected_vendor| detected_vendor.to_lowercase().contains(bios_vendor))
                 .unwrap_or(false)
             {
-                return false;
+                found += 1;
             }
         }
 
         if let Some(product_name) = self.product_name {
-            if !smbios
+            total += 1;
+            if smbios
                 .product_name
                 .as_ref()
                 .map(|detected_vendor| detected_vendor.to_lowercase().contains(product_name))
                 .unwrap_or(false)
             {
-                return false;
+                found += 1;
             }
         }
 
         if let Some(sys_vendor) = self.sys_vendor {
-            if !smbios
+            total += 1;
+            if smbios
                 .sys_vendor
                 .as_ref()
                 .map(|detected_vendor| detected_vendor.to_lowercase().contains(sys_vendor))
                 .unwrap_or(false)
             {
-                return false;
+                found += 1;
             }
         }
 
-        true
+        if total == 0 {
+            // Half of 16384 to avoid giving too much weight on empty matches
+            8192
+        } else {
+            found * 16384 / total
+        }
     }
 
     pub const fn new() -> Self {
@@ -161,6 +171,7 @@ impl SmbiosPattern {
         }
     }
 
+    #[allow(unused)]
     pub const fn with_product_name(self, product_name: &'static str) -> Self {
         Self {
             product_name: Some(product_name),
@@ -173,5 +184,17 @@ impl SmbiosPattern {
             sys_vendor: Some(sys_vendor),
             ..self
         }
+    }
+}
+
+impl Specificity for SmbiosPattern {
+    fn specificity_cmp(&self, other: &Self) -> Option<Ordering> {
+        let bios_vendor = self.bios_vendor.specificity_cmp(&other.bios_vendor);
+        let product_name = self.product_name.specificity_cmp(&other.product_name);
+        let sys_vendor = self.sys_vendor.specificity_cmp(&other.sys_vendor);
+
+        bios_vendor
+            .merge_specificity(product_name)
+            .merge_specificity(sys_vendor)
     }
 }
