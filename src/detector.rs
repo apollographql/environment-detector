@@ -32,7 +32,8 @@ impl Detector {
     pub fn detect(&self, smbios: &Smbios, env_vars: &HashSet<&'static str>) -> u16 {
         let smbios_detect = self.smbios.detect(smbios);
 
-        let env_vars_detect = if self.env_vars.len() == 0 {
+        let env_vars_detect = if self.env_vars.is_empty() {
+            // Half of 16384 to avoid giving too much weight on empty matches
             8192
         } else {
             (self.env_vars.iter().fold(0usize, |acc, env_var| {

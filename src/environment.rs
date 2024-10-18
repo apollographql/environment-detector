@@ -2,36 +2,55 @@ use std::fmt::Display;
 
 use crate::{detector::Detector, env_vars, smbios};
 
-/// Represents the currently supported compute platforms.
+/// Compute environments that can be detected by this crate
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
 pub enum ComputeEnvironment {
     // AWS supported platforms.
+    /// Amazon Elastic Compute Cloud (EC2)
     AwsEc2,
+    /// Amazon Elastic Container Service (ECS)
     AwsEcs,
-    // AwsFargate,
+    /// AWS Lambda
     AwsLambda,
+    /// Kubernetes on AWS
     AwsKubernetes,
+    /// Nomad on AWS
     AwsNomad,
 
     // Azure supported platforms.
+    /// Azure Containers Apps
     AzureContainerApps,
+    /// Azure Container Apps Job
     AzureContainerAppsJob,
+    /// Azure Container Instance
     AzureContainerInstance,
+    /// Kubernetes on Azure
     AzureKubernetes,
+    /// Azure VM
     AzureVM,
+    /// Nomad on Azure
     AzureNomad,
 
     // GCP supported platforms.
+    /// Google Cloud Run (Gen1)
     GcpCloudRunGen1,
+    /// Google Cloud Run (Gen2)
     GcpCloudRunGen2,
+    /// Google Cloud Run (Job)
     GcpCloudRunJob,
+    /// Google Compute Engine
     GcpComputeEngine,
+    /// Kubernetes on Google Cloud
     GcpKubernetes,
+    /// Nomad on Google Cloud
     GcpNomad,
 
     // Generic supported platforms.
+    /// Kubernetes
     Kubernetes,
+    /// Nomad
     Nomad,
+    /// QEMU
     Qemu,
 }
 
@@ -89,6 +108,7 @@ impl ComputeEnvironment {
         }
     }
 
+    /// Static str representation of the [`ComputeEnvironment`]
     pub fn as_str(&self) -> &'static str {
         match self {
             ComputeEnvironment::AwsEc2 => "AWS EC2",
@@ -114,6 +134,50 @@ impl ComputeEnvironment {
         }
     }
 
+    /// Compute Platform code
+    ///
+    /// This corresponds to the `cloud.platform` attribute in OpenTelemetry semantic conventions
+    /// where possible.
+    ///
+    /// For Kubernetes on Cloud Providers, this always assumes that someone is using the
+    /// corresponding managed service (e.g. AWS EKS, AKS, or GKE).
+    ///
+    /// This may also return one of the following values for some environments:
+    ///
+    /// * `kubernetes`
+    /// * `nomad`
+    /// * `qemu`
+    ///
+    /// See <https://opentelemetry.io/docs/specs/semconv/attributes-registry/cloud/>
+    pub fn platform_code(&self) -> &'static str {
+        match self {
+            ComputeEnvironment::AwsEc2 => "aws_ec2",
+            ComputeEnvironment::AwsEcs => "aws_ecs",
+            ComputeEnvironment::AwsLambda => "aws_lambda",
+            // We're assuming Kubernetes on AWS = EKS
+            ComputeEnvironment::AwsKubernetes => "aws_eks",
+            ComputeEnvironment::AwsNomad => "nomad",
+            ComputeEnvironment::AzureContainerApps => "azure_container_apps",
+            ComputeEnvironment::AzureContainerAppsJob => "azure_container_apps",
+            ComputeEnvironment::AzureContainerInstance => "azure_container_instances",
+            // We're assuming Kubernetes on Azure = AKS
+            ComputeEnvironment::AzureKubernetes => "azure_aks",
+            ComputeEnvironment::AzureVM => "azure_vm",
+            ComputeEnvironment::AzureNomad => "nomad",
+            ComputeEnvironment::GcpCloudRunGen1 => "gcp_cloud_run",
+            ComputeEnvironment::GcpCloudRunGen2 => "gcp_cloud_run",
+            ComputeEnvironment::GcpCloudRunJob => "gcp_cloud_run",
+            ComputeEnvironment::GcpComputeEngine => "gcp_compute_engine",
+            // We're assuming Kubernetes on GCP = GKE
+            ComputeEnvironment::GcpKubernetes => "gcp_kubernetes_engine",
+            ComputeEnvironment::GcpNomad => "nomad",
+            ComputeEnvironment::Kubernetes => "kubernetes",
+            ComputeEnvironment::Nomad => "nomad",
+            ComputeEnvironment::Qemu => "qemu",
+        }
+    }
+
+    /// [`CloudProvider`] for this compute environment
     pub fn cloud_provider(&self) -> Option<CloudProvider> {
         match self {
             ComputeEnvironment::AwsEc2
@@ -188,19 +252,36 @@ impl Iterator for ComputeEnvironmentIter {
     }
 }
 
+/// Cloud Providers that can be detected by this crate
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum CloudProvider {
+    /// Amazon Web Services
     Aws,
+    /// Azure
     Azure,
+    /// Google Cloud
     GoogleCloud,
 }
 
 impl CloudProvider {
+    /// Static str representation of the [`CloudProvider`]
     pub fn as_str(&self) -> &'static str {
         match self {
             CloudProvider::Aws => "AWS",
             CloudProvider::Azure => "Azure",
             CloudProvider::GoogleCloud => "Google Cloud",
+        }
+    }
+    /// Cloud Provider code
+    ///
+    /// This corresponds to the `cloud.provider` attribute in OpenTelemetry semantic conventions.
+    ///
+    /// See <https://opentelemetry.io/docs/specs/semconv/attributes-registry/cloud/>
+    pub fn code(&self) -> &'static str {
+        match self {
+            CloudProvider::Aws => "aws",
+            CloudProvider::Azure => "azure",
+            CloudProvider::GoogleCloud => "gcp",
         }
     }
 }

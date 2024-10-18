@@ -149,6 +149,7 @@ impl SmbiosPattern {
         }
 
         if total == 0 {
+            // Half of 16384 to avoid giving too much weight on empty matches
             8192
         } else {
             found * 16384 / total
