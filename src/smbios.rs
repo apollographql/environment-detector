@@ -1,6 +1,9 @@
 use std::cmp::Ordering;
 
-use crate::specificity::{OrderingExt, Specificity};
+use crate::{
+    specificity::{OrderingExt, Specificity},
+    MAX_INDIVIDUAL_WEIGHTING,
+};
 
 pub const AWS: SmbiosPattern = SmbiosPattern::new()
     .with_bios_vendor("amazon")
@@ -13,6 +16,12 @@ pub const GCP: SmbiosPattern = SmbiosPattern::new()
     .with_bios_vendor("google")
     .with_sys_vendor("google");
 pub const QEMU: SmbiosPattern = SmbiosPattern::new().with_sys_vendor("qemu");
+
+#[cfg(test)]
+pub const TESTING: SmbiosPattern = SmbiosPattern::new()
+    .with_bios_vendor("test_bios_vendor")
+    .with_product_name("test_product_name")
+    .with_sys_vendor("test_sys_vendor");
 
 /// Represents data obtained from SMBIOS.
 #[derive(Debug, Default, Clone)]
@@ -106,12 +115,8 @@ pub struct SmbiosPattern {
 }
 
 impl SmbiosPattern {
-    /// Returns a score from 0-16384 representing how many SMBIOS data points are matching the pattern
-    ///
-    /// The score weighting works as follows:
-    /// - u16::MAX = 65535, which is 2^16-1
-    /// - the combined score goes from 0-2^15, therefore each component goes to 2^14 in order
-    /// to have enough buffer compared to 2^15 to avoid thresholding and overflows.
+    /// Returns a score from 0-16384 representing the weight of the detected matches from SMBIOS
+    /// information.
     pub fn detect(&self, smbios: &Smbios) -> u16 {
         let mut total = 0;
         let mut found = 0;
@@ -152,10 +157,11 @@ impl SmbiosPattern {
         }
 
         if total == 0 {
-            // Half of 16384 to avoid giving too much weight on empty matches
-            8192
+            // Half of the max individual weigh for a single detector to avoid giving too much weight
+            // to empty matches.
+            MAX_INDIVIDUAL_WEIGHTING / 2
         } else {
-            found * 16384 / total
+            found * MAX_INDIVIDUAL_WEIGHTING / total
         }
     }
 
@@ -206,6 +212,8 @@ impl Specificity for SmbiosPattern {
 mod tests {
     use rstest::rstest;
 
+    use crate::MAX_INDIVIDUAL_WEIGHTING;
+
     use super::{Smbios, SmbiosPattern};
 
     #[rstest]
@@ -237,5 +245,13 @@ mod tests {
             .detect(&smbios);
 
         assert_eq!(expected, detected);
+    }
+
+    #[rstest]
+    fn test_smbiospattern_detect_empty() {
+        let smbios_pattern = SmbiosPattern::new();
+        let smbios = Smbios::from(smbios_pattern);
+        let detected = SmbiosPattern::new().detect(&smbios);
+        assert_eq!(MAX_INDIVIDUAL_WEIGHTING / 2, detected);
     }
 }
