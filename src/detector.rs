@@ -30,9 +30,9 @@ impl Detector {
     /// SMBIOS information and environment variables.
     ///
     /// The score weighting works as follows:
-    /// - u16::MAX = 65535, which is 2^16-1
-    /// - the combined score goes from 0-2^15, therefore each component goes to 2^14 in order
-    /// to have enough buffer compared to 2^15 to avoid thresholding and overflows.
+    ///   - u16::MAX = 65535, which is 2^16-1
+    ///   - the combined score goes from 0-2^15, therefore each component goes to 2^14 in order
+    ///     to have enough buffer compared to 2^15 to avoid thresholding and overflows.
     pub fn detect(&self, smbios: &Smbios, env_vars: &HashSet<&'static str>) -> u16 {
         let smbios_detect = self.smbios.detect(smbios);
 
