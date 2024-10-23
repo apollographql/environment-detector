@@ -106,9 +106,12 @@ pub struct SmbiosPattern {
 }
 
 impl SmbiosPattern {
-    /// Returns how many SMBIOS data points are matching the pattern
+    /// Returns a score from 0-16384 representing how many SMBIOS data points are matching the pattern
     ///
-    /// This returns a score from 0 to 16384
+    /// The score weighting works as follows:
+    /// - u16::MAX = 65535, which is 2^16-1
+    /// - the combined score goes from 0-2^15, therefore each component goes to 2^14 in order
+    /// to have enough buffer compared to 2^15 to avoid thresholding and overflows.
     pub fn detect(&self, smbios: &Smbios) -> u16 {
         let mut total = 0;
         let mut found = 0;
@@ -196,5 +199,43 @@ impl Specificity for SmbiosPattern {
         bios_vendor
             .merge_specificity(product_name)
             .merge_specificity(sys_vendor)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use rstest::rstest;
+
+    use super::{Smbios, SmbiosPattern};
+
+    #[rstest]
+    #[case::match_none("", "", "", 0)]
+    #[case::match_bios_vendor("test_bios_vendor", "", "", 5461)]
+    #[case::match_product_name("", "test_product_name", "", 5461)]
+    #[case::match_sys_vendor("", "", "test_sys_vendor", 5461)]
+    #[case::match_bios_vendor_product_name("test_bios_vendor", "test_product_name", "", 10922)]
+    #[case::match_bios_vendor_sys_vendor("test_bios_vendor", "", "test_sys_vendor", 10922)]
+    #[case::match_product_name_sys_vendor("", "test_product_name", "test_sys_vendor", 10922)]
+    #[case::match_all("test_bios_vendor", "test_product_name", "test_sys_vendor", 16384)]
+    fn test_smbiospattern_detect(
+        #[case] bios_vendor: &'static str,
+        #[case] product_name: &'static str,
+        #[case] sys_vendor: &'static str,
+        #[case] expected: u16,
+    ) {
+        let smbios = Smbios::from(
+            SmbiosPattern::new()
+                .with_bios_vendor(bios_vendor)
+                .with_product_name(product_name)
+                .with_sys_vendor(sys_vendor),
+        );
+
+        let detected = SmbiosPattern::new()
+            .with_bios_vendor("test_bios_vendor")
+            .with_product_name("test_product_name")
+            .with_sys_vendor("test_sys_vendor")
+            .detect(&smbios);
+
+        assert_eq!(expected, detected);
     }
 }
