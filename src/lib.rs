@@ -15,13 +15,13 @@ mod smbios;
 mod specificity;
 
 /// Represents the maximum weighting of all detectors (2^15).
-const MAX_TOTAL_WEIGHTING: u16 = 32768;
+pub const MAX_TOTAL_WEIGHTING: u16 = 32768;
 /// Represents the maximum individual detector weighting to have enough buffer compared to 2^15
 /// to avoid thresholding and overflows.
 /// We currently support:
 /// - SMBIOS
 /// - Environment Variables
-const MAX_INDIVIDUAL_WEIGHTING: u16 = MAX_TOTAL_WEIGHTING / 2;
+pub const MAX_INDIVIDUAL_WEIGHTING: u16 = MAX_TOTAL_WEIGHTING / 2;
 
 /// Detect the most likely [`ComputeEnvironment`] above a certain threshold
 pub fn detect_one(threshold: u16) -> Option<ComputeEnvironment> {
@@ -125,7 +125,7 @@ mod tests {
         let env_vars: HashSet<_> = environment
             .detector()
             .env_vars
-            .into_iter()
+            .iter()
             .map(Deref::deref)
             .collect();
 
