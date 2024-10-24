@@ -3,16 +3,15 @@
 
 use std::{cmp::Ordering, collections::HashSet, ops::Deref};
 
-use detector::Detector;
-pub use environment::{CloudProvider, ComputeEnvironment};
-use smbios::Smbios;
-use specificity::Specificity as _;
-
 mod detector;
+use detector::Detector;
 mod env_vars;
 mod environment;
+pub use environment::{CloudProvider, ComputeEnvironment};
 mod smbios;
+use smbios::Smbios;
 mod specificity;
+use specificity::Specificity as _;
 
 /// Represents the maximum weighting of all detectors (2^15).
 pub const MAX_TOTAL_WEIGHTING: u16 = 32768;
@@ -28,9 +27,9 @@ pub fn detect_one(threshold: u16) -> Option<ComputeEnvironment> {
     detect(threshold).first().copied()
 }
 
-/// Detect potential [`ComputeEnvironment`]s above a certain match threshold
+/// Detect potential [`ComputeEnvironment`]s above a certain match threshold.
 ///
-/// This return an ordered [`Vec`], with the most likely candidates first.
+/// Returns an ordered [`Vec`] with the highest weighted candidates first.
 pub fn detect(threshold: u16) -> Vec<ComputeEnvironment> {
     let detectors: Vec<_> = ComputeEnvironment::iter().map(|ce| ce.detector()).collect();
 
