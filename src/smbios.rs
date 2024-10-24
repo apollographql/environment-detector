@@ -1,6 +1,9 @@
 use std::cmp::Ordering;
 
-use crate::specificity::{OrderingExt, Specificity};
+use crate::{
+    specificity::{OrderingExt, Specificity},
+    MAX_INDIVIDUAL_WEIGHTING,
+};
 
 pub const AWS: SmbiosPattern = SmbiosPattern::new()
     .with_bios_vendor("amazon")
@@ -13,6 +16,12 @@ pub const GCP: SmbiosPattern = SmbiosPattern::new()
     .with_bios_vendor("google")
     .with_sys_vendor("google");
 pub const QEMU: SmbiosPattern = SmbiosPattern::new().with_sys_vendor("qemu");
+
+#[cfg(test)]
+pub const TESTING: SmbiosPattern = SmbiosPattern::new()
+    .with_bios_vendor("test_bios_vendor")
+    .with_product_name("test_product_name")
+    .with_sys_vendor("test_sys_vendor");
 
 /// Represents data obtained from SMBIOS.
 #[derive(Debug, Default, Clone)]
@@ -106,9 +115,8 @@ pub struct SmbiosPattern {
 }
 
 impl SmbiosPattern {
-    /// Returns how many SMBIOS data points are matching the pattern
-    ///
-    /// This returns a score from 0 to 16384
+    /// Returns a score from 0-16384 representing the weight of the detected matches from SMBIOS
+    /// information.
     pub fn detect(&self, smbios: &Smbios) -> u16 {
         let mut total = 0;
         let mut found = 0;
@@ -149,10 +157,11 @@ impl SmbiosPattern {
         }
 
         if total == 0 {
-            // Half of 16384 to avoid giving too much weight on empty matches
-            8192
+            // Half of the max individual weigh for a single detector to avoid giving too much weight
+            // to empty matches.
+            MAX_INDIVIDUAL_WEIGHTING / 2
         } else {
-            found * 16384 / total
+            found * MAX_INDIVIDUAL_WEIGHTING / total
         }
     }
 
@@ -196,5 +205,53 @@ impl Specificity for SmbiosPattern {
         bios_vendor
             .merge_specificity(product_name)
             .merge_specificity(sys_vendor)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use rstest::rstest;
+
+    use crate::MAX_INDIVIDUAL_WEIGHTING;
+
+    use super::{Smbios, SmbiosPattern};
+
+    #[rstest]
+    #[case::match_none("", "", "", 0)]
+    #[case::match_bios_vendor("test_bios_vendor", "", "", 5461)]
+    #[case::match_product_name("", "test_product_name", "", 5461)]
+    #[case::match_sys_vendor("", "", "test_sys_vendor", 5461)]
+    #[case::match_bios_vendor_product_name("test_bios_vendor", "test_product_name", "", 10922)]
+    #[case::match_bios_vendor_sys_vendor("test_bios_vendor", "", "test_sys_vendor", 10922)]
+    #[case::match_product_name_sys_vendor("", "test_product_name", "test_sys_vendor", 10922)]
+    #[case::match_all("test_bios_vendor", "test_product_name", "test_sys_vendor", 16384)]
+    fn test_smbiospattern_detect(
+        #[case] bios_vendor: &'static str,
+        #[case] product_name: &'static str,
+        #[case] sys_vendor: &'static str,
+        #[case] expected: u16,
+    ) {
+        let smbios = Smbios::from(
+            SmbiosPattern::new()
+                .with_bios_vendor(bios_vendor)
+                .with_product_name(product_name)
+                .with_sys_vendor(sys_vendor),
+        );
+
+        let detected = SmbiosPattern::new()
+            .with_bios_vendor("test_bios_vendor")
+            .with_product_name("test_product_name")
+            .with_sys_vendor("test_sys_vendor")
+            .detect(&smbios);
+
+        assert_eq!(expected, detected);
+    }
+
+    #[rstest]
+    fn test_smbiospattern_detect_empty() {
+        let smbios_pattern = SmbiosPattern::new();
+        let smbios = Smbios::from(smbios_pattern);
+        let detected = SmbiosPattern::new().detect(&smbios);
+        assert_eq!(MAX_INDIVIDUAL_WEIGHTING / 2, detected);
     }
 }

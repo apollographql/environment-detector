@@ -104,7 +104,7 @@ pub const KUBERNETES: &[&str] = &[
     "KUBERNETES_SERVICE_PORT_HTTPS",
 ];
 pub const NOMAD: &[&str] = &[
-    "    NOMAD_ALLOC_DIR",
+    "NOMAD_ALLOC_DIR",
     "NOMAD_ALLOC_ID",
     "NOMAD_ALLOC_INDEX",
     "NOMAD_ALLOC_NAME",
@@ -130,7 +130,9 @@ pub const NOMAD: &[&str] = &[
 /// in memory, as this data should always be treated as secure regardless of the data.
 #[cfg(unix)]
 pub fn hasenv(name: &str) -> bool {
-    let k = std::ffi::CString::new(name).unwrap();
+    let Ok(k) = std::ffi::CString::new(name) else {
+        return false;
+    };
     let v = unsafe { libc::getenv(k.as_ptr()) } as *const libc::c_char;
     !v.is_null()
 }
@@ -152,7 +154,7 @@ mod tests {
     #[test]
     fn test_hasenv() {
         // Set an temporary env var for the current process.
-        let var = "TEST_ENV_ENV_DETECTOR";
+        let var = "TEST_VAR_ENV_DETECTOR";
         env::set_var(var, "true");
 
         // Assert that temporary env vars do/don't exist.

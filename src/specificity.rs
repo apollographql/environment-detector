@@ -64,8 +64,9 @@ impl OrderingExt for Option<Ordering> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use rstest::rstest;
+
+    use super::*;
 
     #[rstest]
     #[case(Some(3), None, Some(Ordering::Greater))]
@@ -78,7 +79,7 @@ mod tests {
         #[case] expected: Option<Ordering>,
     ) {
         let result = left.specificity_cmp(&right);
-        assert_eq!(result, expected);
+        assert_eq!(expected, result);
     }
 
     #[rstest]
@@ -91,10 +92,10 @@ mod tests {
         #[case] right: &'static [&'static str],
         #[case] expected: Option<Ordering>,
     ) {
-        let left: HashSet<_> = left.into_iter().collect();
-        let right: HashSet<_> = right.into_iter().collect();
+        let left: HashSet<_> = left.iter().collect();
+        let right: HashSet<_> = right.iter().collect();
 
         let result = left.specificity_cmp(&right);
-        assert_eq!(result, expected);
+        assert_eq!(expected, result);
     }
 }

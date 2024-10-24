@@ -52,6 +52,9 @@ pub enum ComputeEnvironment {
     Nomad,
     /// QEMU
     Qemu,
+
+    #[cfg(test)]
+    Testing,
 }
 
 impl ComputeEnvironment {
@@ -105,6 +108,9 @@ impl ComputeEnvironment {
             }
             ComputeEnvironment::Nomad => Detector::new(*self, smbios::EMPTY, env_vars::NOMAD),
             ComputeEnvironment::Qemu => Detector::new(*self, smbios::QEMU, env_vars::EMPTY),
+
+            #[cfg(test)]
+            ComputeEnvironment::Testing => Detector::new(*self, smbios::EMPTY, env_vars::EMPTY),
         }
     }
 
@@ -131,6 +137,9 @@ impl ComputeEnvironment {
             ComputeEnvironment::Kubernetes => "Kubernetes",
             ComputeEnvironment::Nomad => "Nomad",
             ComputeEnvironment::Qemu => "QEMU",
+
+            #[cfg(test)]
+            ComputeEnvironment::Testing => "Testing",
         }
     }
 
@@ -174,6 +183,9 @@ impl ComputeEnvironment {
             ComputeEnvironment::Kubernetes => "kubernetes",
             ComputeEnvironment::Nomad => "nomad",
             ComputeEnvironment::Qemu => "qemu",
+
+            #[cfg(test)]
+            ComputeEnvironment::Testing => "testing",
         }
     }
 
@@ -200,6 +212,9 @@ impl ComputeEnvironment {
             ComputeEnvironment::Kubernetes
             | ComputeEnvironment::Nomad
             | ComputeEnvironment::Qemu => None,
+
+            #[cfg(test)]
+            ComputeEnvironment::Testing => None,
         }
     }
 }
@@ -294,11 +309,14 @@ impl Display for CloudProvider {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::specificity::Specificity as _;
-    use rstest::{fixture, rstest};
     use std::cmp::Ordering;
     use std::collections::HashMap;
+
+    use rstest::{fixture, rstest};
+
+    use crate::specificity::Specificity as _;
+
+    use super::*;
 
     #[fixture]
     fn expected_matrix() -> HashMap<(ComputeEnvironment, ComputeEnvironment), Option<Ordering>> {
