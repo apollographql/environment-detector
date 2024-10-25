@@ -6,10 +6,15 @@
 //! # Examples
 //!
 //! ```
-//! use apollo_environment_detector::{detect, MAX_INDIVIDUAL_WEIGHTING};
+//! use apollo_environment_detector::{detect, detect_one, MAX_INDIVIDUAL_WEIGHTING};
 //!
+//! // Attempt to detect multiple environments based on a weighting.
 //! let compute_envs = detect(MAX_INDIVIDUAL_WEIGHTING);
 //! println!("{:?}", compute_envs);
+//!
+//! // Attempt to detect a single environment based on a weighting.
+//! let compute_env = detect_one(MAX_INDIVIDUAL_WEIGHTING);
+//! println!("{:?}", compute_env);
 //! ```
 
 #![warn(missing_docs)]
