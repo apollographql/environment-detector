@@ -64,82 +64,68 @@ impl ComputeEnvironment {
 
     pub(crate) fn detector(&self) -> Detector {
         match self {
-            ComputeEnvironment::AwsEc2 => Detector::new(*self, smbios::AWS, env_vars::EMPTY),
-            ComputeEnvironment::AwsEcs => Detector::new(*self, smbios::EMPTY, env_vars::AWS_ECS),
-            ComputeEnvironment::AwsLambda => {
-                Detector::new(*self, smbios::EMPTY, env_vars::AWS_LAMBDA)
-            }
-            ComputeEnvironment::AwsKubernetes => {
-                Detector::new(*self, smbios::AWS, env_vars::KUBERNETES)
-            }
-            ComputeEnvironment::AwsNomad => Detector::new(*self, smbios::AWS, env_vars::NOMAD),
-            ComputeEnvironment::AzureContainerApps => {
+            Self::AwsEc2 => Detector::new(*self, smbios::AWS, env_vars::EMPTY),
+            Self::AwsEcs => Detector::new(*self, smbios::EMPTY, env_vars::AWS_ECS),
+            Self::AwsLambda => Detector::new(*self, smbios::EMPTY, env_vars::AWS_LAMBDA),
+            Self::AwsKubernetes => Detector::new(*self, smbios::AWS, env_vars::KUBERNETES),
+            Self::AwsNomad => Detector::new(*self, smbios::AWS, env_vars::NOMAD),
+            Self::AzureContainerApps => {
                 Detector::new(*self, smbios::AZURE, env_vars::AZURE_CONTAINER_APPS)
             }
-            ComputeEnvironment::AzureContainerAppsJob => {
+            Self::AzureContainerAppsJob => {
                 Detector::new(*self, smbios::AZURE, env_vars::AZURE_CONTAINER_APPS_JOB)
             }
             Self::AzureContainerInstance => {
                 Detector::new(*self, smbios::EMPTY, env_vars::AZURE_CONTAINER_INSTANCE)
             }
-            ComputeEnvironment::AzureKubernetes => {
-                Detector::new(*self, smbios::AZURE, env_vars::KUBERNETES)
-            }
-            ComputeEnvironment::AzureVM => Detector::new(*self, smbios::AZURE, env_vars::EMPTY),
-            ComputeEnvironment::AzureNomad => Detector::new(*self, smbios::AZURE, env_vars::NOMAD),
-            ComputeEnvironment::GcpCloudRunGen1 => {
+            Self::AzureKubernetes => Detector::new(*self, smbios::AZURE, env_vars::KUBERNETES),
+            Self::AzureVM => Detector::new(*self, smbios::AZURE, env_vars::EMPTY),
+            Self::AzureNomad => Detector::new(*self, smbios::AZURE, env_vars::NOMAD),
+            Self::GcpCloudRunGen1 => {
                 Detector::new(*self, smbios::EMPTY, env_vars::GCP_CLOUD_RUN_SERVICE)
             }
-            ComputeEnvironment::GcpCloudRunGen2 => {
+            Self::GcpCloudRunGen2 => {
                 Detector::new(*self, smbios::GCP, env_vars::GCP_CLOUD_RUN_SERVICE)
             }
-            ComputeEnvironment::GcpCloudRunJob => {
-                Detector::new(*self, smbios::GCP, env_vars::GCP_CLOUD_RUN_JOB)
-            }
-            ComputeEnvironment::GcpComputeEngine => {
-                Detector::new(*self, smbios::GCP, env_vars::EMPTY)
-            }
-            ComputeEnvironment::GcpKubernetes => {
-                Detector::new(*self, smbios::GCP, env_vars::KUBERNETES)
-            }
-            ComputeEnvironment::GcpNomad => Detector::new(*self, smbios::GCP, env_vars::NOMAD),
-            ComputeEnvironment::Kubernetes => {
-                Detector::new(*self, smbios::EMPTY, env_vars::KUBERNETES)
-            }
-            ComputeEnvironment::Nomad => Detector::new(*self, smbios::EMPTY, env_vars::NOMAD),
-            ComputeEnvironment::Qemu => Detector::new(*self, smbios::QEMU, env_vars::EMPTY),
+            Self::GcpCloudRunJob => Detector::new(*self, smbios::GCP, env_vars::GCP_CLOUD_RUN_JOB),
+            Self::GcpComputeEngine => Detector::new(*self, smbios::GCP, env_vars::EMPTY),
+            Self::GcpKubernetes => Detector::new(*self, smbios::GCP, env_vars::KUBERNETES),
+            Self::GcpNomad => Detector::new(*self, smbios::GCP, env_vars::NOMAD),
+            Self::Kubernetes => Detector::new(*self, smbios::EMPTY, env_vars::KUBERNETES),
+            Self::Nomad => Detector::new(*self, smbios::EMPTY, env_vars::NOMAD),
+            Self::Qemu => Detector::new(*self, smbios::QEMU, env_vars::EMPTY),
 
             #[cfg(test)]
-            ComputeEnvironment::Testing => Detector::new(*self, smbios::EMPTY, env_vars::EMPTY),
+            Self::Testing => Detector::new(*self, smbios::EMPTY, env_vars::EMPTY),
         }
     }
 
     /// Static str representation of the [`ComputeEnvironment`]
     pub fn as_str(&self) -> &'static str {
         match self {
-            ComputeEnvironment::AwsEc2 => "AWS EC2",
-            ComputeEnvironment::AwsEcs => "AWS ECS",
-            ComputeEnvironment::AwsLambda => "AWS Lambda",
-            ComputeEnvironment::AwsKubernetes => "Kubernetes on AWS",
-            ComputeEnvironment::AwsNomad => "Nomad on AWS",
-            ComputeEnvironment::AzureContainerApps => "Azure Container Apps",
-            ComputeEnvironment::AzureContainerAppsJob => "Azure Container Apps Job",
-            ComputeEnvironment::AzureContainerInstance => "Azure Container Instance",
-            ComputeEnvironment::AzureKubernetes => "Kubernetes on Azure",
-            ComputeEnvironment::AzureVM => "Azure VM",
-            ComputeEnvironment::AzureNomad => "Nomad on Azure",
-            ComputeEnvironment::GcpCloudRunGen1 => "Google Cloud Run (Gen1)",
-            ComputeEnvironment::GcpCloudRunGen2 => "Google Cloud Run (Gen2)",
-            ComputeEnvironment::GcpCloudRunJob => "Google Cloud Run (Job)",
-            ComputeEnvironment::GcpComputeEngine => "Google Compute Engine",
-            ComputeEnvironment::GcpKubernetes => "Kubernetes on Google Cloud",
-            ComputeEnvironment::GcpNomad => "Nomad on Google Cloud",
-            ComputeEnvironment::Kubernetes => "Kubernetes",
-            ComputeEnvironment::Nomad => "Nomad",
-            ComputeEnvironment::Qemu => "QEMU",
+            Self::AwsEc2 => "AWS EC2",
+            Self::AwsEcs => "AWS ECS",
+            Self::AwsLambda => "AWS Lambda",
+            Self::AwsKubernetes => "Kubernetes on AWS",
+            Self::AwsNomad => "Nomad on AWS",
+            Self::AzureContainerApps => "Azure Container Apps",
+            Self::AzureContainerAppsJob => "Azure Container Apps Job",
+            Self::AzureContainerInstance => "Azure Container Instance",
+            Self::AzureKubernetes => "Kubernetes on Azure",
+            Self::AzureVM => "Azure VM",
+            Self::AzureNomad => "Nomad on Azure",
+            Self::GcpCloudRunGen1 => "Google Cloud Run (Gen1)",
+            Self::GcpCloudRunGen2 => "Google Cloud Run (Gen2)",
+            Self::GcpCloudRunJob => "Google Cloud Run (Job)",
+            Self::GcpComputeEngine => "Google Compute Engine",
+            Self::GcpKubernetes => "Kubernetes on Google Cloud",
+            Self::GcpNomad => "Nomad on Google Cloud",
+            Self::Kubernetes => "Kubernetes",
+            Self::Nomad => "Nomad",
+            Self::Qemu => "QEMU",
 
             #[cfg(test)]
-            ComputeEnvironment::Testing => "Testing",
+            Self::Testing => "Testing",
         }
     }
 
@@ -160,61 +146,59 @@ impl ComputeEnvironment {
     /// See <https://opentelemetry.io/docs/specs/semconv/attributes-registry/cloud/>
     pub fn platform_code(&self) -> &'static str {
         match self {
-            ComputeEnvironment::AwsEc2 => "aws_ec2",
-            ComputeEnvironment::AwsEcs => "aws_ecs",
-            ComputeEnvironment::AwsLambda => "aws_lambda",
+            Self::AwsEc2 => "aws_ec2",
+            Self::AwsEcs => "aws_ecs",
+            Self::AwsLambda => "aws_lambda",
             // We're assuming Kubernetes on AWS = EKS
-            ComputeEnvironment::AwsKubernetes => "aws_eks",
-            ComputeEnvironment::AwsNomad => "nomad",
-            ComputeEnvironment::AzureContainerApps => "azure_container_apps",
-            ComputeEnvironment::AzureContainerAppsJob => "azure_container_apps",
-            ComputeEnvironment::AzureContainerInstance => "azure_container_instances",
+            Self::AwsKubernetes => "aws_eks",
+            Self::AwsNomad => "nomad",
+            Self::AzureContainerApps => "azure_container_apps",
+            Self::AzureContainerAppsJob => "azure_container_apps",
+            Self::AzureContainerInstance => "azure_container_instances",
             // We're assuming Kubernetes on Azure = AKS
-            ComputeEnvironment::AzureKubernetes => "azure_aks",
-            ComputeEnvironment::AzureVM => "azure_vm",
-            ComputeEnvironment::AzureNomad => "nomad",
-            ComputeEnvironment::GcpCloudRunGen1 => "gcp_cloud_run",
-            ComputeEnvironment::GcpCloudRunGen2 => "gcp_cloud_run",
-            ComputeEnvironment::GcpCloudRunJob => "gcp_cloud_run",
-            ComputeEnvironment::GcpComputeEngine => "gcp_compute_engine",
+            Self::AzureKubernetes => "azure_aks",
+            Self::AzureVM => "azure_vm",
+            Self::AzureNomad => "nomad",
+            Self::GcpCloudRunGen1 => "gcp_cloud_run",
+            Self::GcpCloudRunGen2 => "gcp_cloud_run",
+            Self::GcpCloudRunJob => "gcp_cloud_run",
+            Self::GcpComputeEngine => "gcp_compute_engine",
             // We're assuming Kubernetes on GCP = GKE
-            ComputeEnvironment::GcpKubernetes => "gcp_kubernetes_engine",
-            ComputeEnvironment::GcpNomad => "nomad",
-            ComputeEnvironment::Kubernetes => "kubernetes",
-            ComputeEnvironment::Nomad => "nomad",
-            ComputeEnvironment::Qemu => "qemu",
+            Self::GcpKubernetes => "gcp_kubernetes_engine",
+            Self::GcpNomad => "nomad",
+            Self::Kubernetes => "kubernetes",
+            Self::Nomad => "nomad",
+            Self::Qemu => "qemu",
 
             #[cfg(test)]
-            ComputeEnvironment::Testing => "testing",
+            Self::Testing => "testing",
         }
     }
 
     /// [`CloudProvider`] for this compute environment
     pub fn cloud_provider(&self) -> Option<CloudProvider> {
         match self {
-            ComputeEnvironment::AwsEc2
-            | ComputeEnvironment::AwsEcs
-            | ComputeEnvironment::AwsLambda
-            | ComputeEnvironment::AwsKubernetes
-            | ComputeEnvironment::AwsNomad => Some(CloudProvider::Aws),
-            ComputeEnvironment::AzureContainerApps
-            | ComputeEnvironment::AzureContainerAppsJob
-            | ComputeEnvironment::AzureContainerInstance
-            | ComputeEnvironment::AzureKubernetes
-            | ComputeEnvironment::AzureVM
-            | ComputeEnvironment::AzureNomad => Some(CloudProvider::Azure),
-            ComputeEnvironment::GcpCloudRunGen1
-            | ComputeEnvironment::GcpCloudRunGen2
-            | ComputeEnvironment::GcpCloudRunJob
-            | ComputeEnvironment::GcpComputeEngine
-            | ComputeEnvironment::GcpKubernetes
-            | ComputeEnvironment::GcpNomad => Some(CloudProvider::GoogleCloud),
-            ComputeEnvironment::Kubernetes
-            | ComputeEnvironment::Nomad
-            | ComputeEnvironment::Qemu => None,
+            Self::AwsEc2
+            | Self::AwsEcs
+            | Self::AwsLambda
+            | Self::AwsKubernetes
+            | Self::AwsNomad => Some(CloudProvider::Aws),
+            Self::AzureContainerApps
+            | Self::AzureContainerAppsJob
+            | Self::AzureContainerInstance
+            | Self::AzureKubernetes
+            | Self::AzureVM
+            | Self::AzureNomad => Some(CloudProvider::Azure),
+            Self::GcpCloudRunGen1
+            | Self::GcpCloudRunGen2
+            | Self::GcpCloudRunJob
+            | Self::GcpComputeEngine
+            | Self::GcpKubernetes
+            | Self::GcpNomad => Some(CloudProvider::GoogleCloud),
+            Self::Kubernetes | Self::Nomad | Self::Qemu => None,
 
             #[cfg(test)]
-            ComputeEnvironment::Testing => None,
+            Self::Testing => None,
         }
     }
 }
@@ -282,9 +266,9 @@ impl CloudProvider {
     /// Static str representation of the [`CloudProvider`].
     pub fn as_str(&self) -> &'static str {
         match self {
-            CloudProvider::Aws => "AWS",
-            CloudProvider::Azure => "Azure",
-            CloudProvider::GoogleCloud => "Google Cloud",
+            Self::Aws => "AWS",
+            Self::Azure => "Azure",
+            Self::GoogleCloud => "Google Cloud",
         }
     }
     /// Cloud Provider code.
@@ -294,9 +278,9 @@ impl CloudProvider {
     /// See: <https://opentelemetry.io/docs/specs/semconv/attributes-registry/cloud/>
     pub fn code(&self) -> &'static str {
         match self {
-            CloudProvider::Aws => "aws",
-            CloudProvider::Azure => "azure",
-            CloudProvider::GoogleCloud => "gcp",
+            Self::Aws => "aws",
+            Self::Azure => "azure",
+            Self::GoogleCloud => "gcp",
         }
     }
 }
