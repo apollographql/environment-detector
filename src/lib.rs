@@ -1,5 +1,18 @@
-#![warn(missing_docs)]
 //! # Compute Environment Detector
+//!
+//! This library provides two functions for easily detecting a [`ComputeEnvironment`] based on a
+//! given weighted threshold.
+//!
+//! # Examples
+//!
+//! ```
+//! use apollo_environment_detector::{detect, MAX_INDIVIDUAL_WEIGHTING};
+//!
+//! let compute_envs = detect(MAX_INDIVIDUAL_WEIGHTING);
+//! println!("{:?}", compute_envs);
+//! ```
+
+#![warn(missing_docs)]
 
 use std::{cmp::Ordering, collections::HashSet, ops::Deref};
 
@@ -13,21 +26,25 @@ use smbios::Smbios;
 mod specificity;
 use specificity::Specificity as _;
 
-/// Represents the maximum weighting of all detectors (2^15).
-pub const MAX_TOTAL_WEIGHTING: u16 = 32768;
-/// Represents the maximum individual detector weighting to have enough buffer compared to 2^15
-/// to avoid thresholding and overflows.
-/// We currently support:
+/// Represents the maximum weighting of all supported detectors (`2^15`).
+///
+/// This maximum weighting was chosen in order to have enough buffer compared
+/// to avoid thresholding and overflows when using multiple detectors.
+pub const MAX_TOTAL_WEIGHTING: u16 = 2 << 14;
+
+/// Represents the maximum individual detector weighting.
+///
+/// There are currently 2 supported detectors:
 /// - SMBIOS
 /// - Environment Variables
 pub const MAX_INDIVIDUAL_WEIGHTING: u16 = MAX_TOTAL_WEIGHTING / 2;
 
-/// Detect the most likely [`ComputeEnvironment`] above a certain threshold
+/// Detect a single, most likely [`ComputeEnvironment`] above a certain weighted threshold.
 pub fn detect_one(threshold: u16) -> Option<ComputeEnvironment> {
     detect(threshold).first().copied()
 }
 
-/// Detect potential [`ComputeEnvironment`]s above a certain match threshold.
+/// Detect potential [`ComputeEnvironment`]s above a certain weighted threshold.
 ///
 /// Returns an ordered [`Vec`] with the highest weighted candidates first.
 pub fn detect(threshold: u16) -> Vec<ComputeEnvironment> {
@@ -48,7 +65,6 @@ pub fn detect(threshold: u16) -> Vec<ComputeEnvironment> {
     detect_inner(detectors, smbios, env_vars, threshold)
 }
 
-/// Detect
 fn detect_inner(
     detectors: Vec<Detector>,
     smbios: Smbios,
@@ -76,6 +92,7 @@ fn detect_inner(
             o => o.reverse(),
         }
     });
+
     detectors
         .into_iter()
         .map(|(detector, _)| detector.environment)

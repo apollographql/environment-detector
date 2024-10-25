@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 use crate::{detector::Detector, env_vars, smbios};
 
-/// Compute environments that can be detected by this crate
+/// Supported compute environments that can be detected by this crate
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
 pub enum ComputeEnvironment {
     // AWS supported platforms.
@@ -267,19 +267,19 @@ impl Iterator for ComputeEnvironmentIter {
     }
 }
 
-/// Cloud Providers that can be detected by this crate
+/// Supported cloud providers that can be detected by this crate.
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum CloudProvider {
     /// Amazon Web Services
     Aws,
-    /// Azure
+    /// Microsoft Azure
     Azure,
-    /// Google Cloud
+    /// Google Cloud Platform
     GoogleCloud,
 }
 
 impl CloudProvider {
-    /// Static str representation of the [`CloudProvider`]
+    /// Static str representation of the [`CloudProvider`].
     pub fn as_str(&self) -> &'static str {
         match self {
             CloudProvider::Aws => "AWS",
@@ -287,11 +287,11 @@ impl CloudProvider {
             CloudProvider::GoogleCloud => "Google Cloud",
         }
     }
-    /// Cloud Provider code
+    /// Cloud Provider code.
     ///
     /// This corresponds to the `cloud.provider` attribute in OpenTelemetry semantic conventions.
     ///
-    /// See <https://opentelemetry.io/docs/specs/semconv/attributes-registry/cloud/>
+    /// See: <https://opentelemetry.io/docs/specs/semconv/attributes-registry/cloud/>
     pub fn code(&self) -> &'static str {
         match self {
             CloudProvider::Aws => "aws",
