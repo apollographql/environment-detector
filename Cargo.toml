@@ -1,7 +1,11 @@
 [package]
 name = "apollo-environment-detector"
 version = "0.1.0"
+authors = ["Apollo Developers <opensource@apollographql.com>"]
 edition = "2021"
+description = "Library for detecting different compute environments"
+license = "MIT OR ELv2"
+repository = "https://github.com/apollographql/environment-detector"
 
 [target.'cfg(unix)'.dependencies]
 libc = "0.2.159"
