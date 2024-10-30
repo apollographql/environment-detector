@@ -1,8 +1,7 @@
 
 # Release Checklist
 
-This is a list of the things that need to happen during a release. We support three kinds of releases:
-1. A standard release, from `main` (i.e. 0.1.0, v0.2.3, v4.5.6, etc.)
+A standard release, from `main` (i.e. 0.1.0, v0.2.3, v4.5.6, etc.)
 
 _N.B All the version numbers above follow Semantic Versioning, and specifically its notion of encoding pre-release information after the `-` for more information see the [Semantic Versioning specification](https://semver.org/)_
 
