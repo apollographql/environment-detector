@@ -1,9 +1,23 @@
 version: 2.1
 
+parameters:
+  rust-version:
+    type: string
+    default: "1.82.0"
+
+release: &release
+  filters:
+    branches:
+      ignore: /.*/
+    tags:
+      # This regex is taken verbatim from https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string and
+      # ensures we only ever run our release pipeline for Semver tags
+      only: /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/
+
 jobs:
   build:
     docker:
-      - image: cimg/rust:1.82.0
+      - image: cimg/rust:<< pipeline.parameters.rust-version >>
     steps:
       - checkout
       - run:
@@ -15,3 +29,29 @@ jobs:
       - run:
           name: Cargo test
           command: cargo test
+
+  publish_release:
+    docker:
+      - image: cimg/rust:<< pipeline.parameters.rust-version >>
+    steps:
+      - checkout
+      - run:
+          name: Publish to crates.io
+          command: cargo publish -p $CIRCLE_TAG
+
+workflows:
+  build:
+    jobs:
+      - build
+
+  release:
+    jobs:
+      - build:
+          name: Build
+          <<: *release
+
+      - publish_release:
+          name: Publish to crates.io
+          requires:
+            - "Build"
+          <<: *release
