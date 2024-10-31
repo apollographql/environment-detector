@@ -37,7 +37,7 @@ jobs:
       - checkout
       - run:
           name: Publish to crates.io
-          command: cargo publish -p $CIRCLE_TAG
+          command: cargo publish
 
 workflows:
   build:
