@@ -1,7 +1,7 @@
 # apollo-environment-detector
 [![CircleCI](https://circleci.com/gh/apollographql/environment-detector/tree/main.svg?style=shield)](https://circleci.com/gh/apollographql/environment-detector/tree/main)
 
-This library provides two functions for easily detecting a [`ComputeEnvironment`](https://docs.rs/apollo-environment-detector/0.1/apollo-environment-detector/enum.ComputeEnvironment.html) based on a
+This library provides two functions for easily detecting a [`ComputeEnvironment`](https://docs.rs/apollo-environment-detector/0.1.0/apollo_environment_detector/enum.ComputeEnvironment.html) based on a
 given weighted threshold.
 
 ```
@@ -56,5 +56,5 @@ There are currently 3 data points read during detection on both Linux and Window
 ### Threshold Weighting
 A detection threshold is represented in the form of a `u16`, which has a max of `65535` (`2^16-1`) as defined in `u16::MAX`.
 
-As we supported multiple detectors, the maximum returned total weighting is `2^15` in order to avoid thresholding and overflows when using multiple detectors. This is exposed as a constant [`MAX_TOTAL_WEIGHTING`](https://docs.rs/apollo-environment-detector/0.1/apollo-environment-detector/constant.MAX_TOTAL_WEIGHTING.html).
+As we supported multiple detectors, the maximum returned total weighting is `2^15` in order to avoid thresholding and overflows when using multiple detectors. This is exposed as a constant [`MAX_TOTAL_WEIGHTING`](https://docs.rs/apollo-environment-detector/0.1.0/apollo_environment_detector/constant.MAX_TOTAL_WEIGHTING.html).
 
