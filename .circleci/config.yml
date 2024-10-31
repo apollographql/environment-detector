@@ -1,5 +1,8 @@
 version: 2.1
 
+orbs:
+  secops: apollo/circleci-secops-orb@2.0.7
+
 parameters:
   rust-version:
     type: string
@@ -57,3 +60,19 @@ workflows:
           requires:
             - "Build"
           <<: *release
+
+  security-scans:
+    jobs:
+      - secops/gitleaks:
+          context:
+            - platform-docker-ro
+            - github-orb
+            - secops-oidc
+          git-base-revision: <<#pipeline.git.base_revision>><<pipeline.git.base_revision>><</pipeline.git.base_revision >>
+          git-revision: << pipeline.git.revision >>
+
+      - secops/semgrep:
+          context:
+            - secops-oidc
+            - github-orb
+          git-base-revision: <<#pipeline.git.base_revision>><<pipeline.git.base_revision>><</pipeline.git.base_revision >>
