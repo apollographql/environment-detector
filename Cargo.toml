@@ -12,7 +12,7 @@ libc = "0.2.159"
 
 [target.'cfg(target_os = "windows")'.dependencies]
 wmi = "0.14.0"
-serde = { version = "1.0.210", features = ["derive"] }
+serde = { version = "1.0.215", features = ["derive"] }
 
 [dev-dependencies]
 rstest = "0.23.0"
