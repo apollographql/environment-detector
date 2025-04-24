@@ -8,7 +8,7 @@ license = "MIT OR Elastic-2.0"
 repository = "https://github.com/apollographql/environment-detector"
 
 [target.'cfg(unix)'.dependencies]
-libc = "0.2.164"
+libc = "0.2.169"
 
 [target.'cfg(target_os = "windows")'.dependencies]
 wmi = "0.14.0"
