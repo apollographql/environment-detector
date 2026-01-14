@@ -15,4 +15,4 @@ wmi = "0.14.0"
 serde = { version = "1.0.210", features = ["derive"] }
 
 [dev-dependencies]
-rstest = "0.23.0"
+rstest = "0.26.0"
