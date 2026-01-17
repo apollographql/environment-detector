@@ -11,7 +11,7 @@ repository = "https://github.com/apollographql/environment-detector"
 libc = "0.2.164"
 
 [target.'cfg(target_os = "windows")'.dependencies]
-wmi = "0.14.0"
+wmi = "0.18.0"
 serde = { version = "1.0.210", features = ["derive"] }
 
 [dev-dependencies]
